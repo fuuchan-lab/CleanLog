@@ -469,8 +469,37 @@ function handleDateRangeSubmit(event) {
 }
 
 function toDateTimeLocalValue(date) {
+  if (!(date instanceof Date) || Number.isNaN(date.getTime())) {
+    return toDateTimeLocalValue(new Date());
+  }
   const offsetDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
   return offsetDate.toISOString().slice(0, 16);
+}
+
+function parseExifDate(value) {
+  if (value instanceof Date && !Number.isNaN(value.getTime())) return value;
+  if (typeof value !== 'string') return null;
+
+  const normalized = value.trim().replace(/^([0-9]{4}):([0-9]{2}):([0-9]{2})/, '$1-$2-$3');
+  const parsed = new Date(normalized.replace(' ', 'T'));
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+function gpsCoordinateToDecimal(value, reference) {
+  if (typeof value === 'number') return value;
+  if (!Array.isArray(value) || value.length < 3) return null;
+
+  const parts = value.map((part) => {
+    if (typeof part === 'number') return part;
+    if (part && typeof part === 'object' && typeof part.numerator === 'number') {
+      return part.denominator ? part.numerator / part.denominator : part.numerator;
+    }
+    return Number(part);
+  });
+  if (parts.some((part) => !Number.isFinite(part))) return null;
+
+  const decimal = parts[0] + parts[1] / 60 + parts[2] / 3600;
+  return ['S', 'W'].includes(String(reference).toUpperCase()) ? -decimal : decimal;
 }
 
 function classifyPhoto(file) {
@@ -492,7 +521,12 @@ async function readPhotoMetadata(file) {
   if (!window.exifr || typeof window.exifr.parse !== 'function') return {};
 
   try {
-    return await window.exifr.parse(file, { exif: true, gps: true }) || {};
+    return await window.exifr.parse(file, {
+      tiff: true,
+      exif: true,
+      gps: true,
+      translateValues: true,
+    }) || {};
   } catch (error) {
     return {};
   }
@@ -506,14 +540,16 @@ async function handlePhotoFile(file) {
   photoPreview.src = URL.createObjectURL(file);
   photoPreview.classList.remove('hidden');
   const metadata = await readPhotoMetadata(file);
-  const capturedDate = metadata.DateTimeOriginal || metadata.CreateDate || metadata.ModifyDate;
-  recordDateTimeInput.value = toDateTimeLocalValue(capturedDate instanceof Date ? capturedDate : new Date(file.lastModified || Date.now()));
+  const capturedDate = parseExifDate(metadata.DateTimeOriginal || metadata.CreateDate || metadata.ModifyDate);
+  recordDateTimeInput.value = toDateTimeLocalValue(capturedDate || new Date(file.lastModified || Date.now()));
 
-  if (typeof metadata.latitude === 'number' && typeof metadata.longitude === 'number') {
+  const latitude = metadata.latitude ?? gpsCoordinateToDecimal(metadata.GPSLatitude, metadata.GPSLatitudeRef);
+  const longitude = metadata.longitude ?? gpsCoordinateToDecimal(metadata.GPSLongitude, metadata.GPSLongitudeRef);
+  if (Number.isFinite(latitude) && Number.isFinite(longitude)) {
     selectedPhotoLocation = {
-      lat: metadata.latitude,
-      lng: metadata.longitude,
-      place: `${metadata.latitude.toFixed(5)}, ${metadata.longitude.toFixed(5)}`,
+      lat: latitude,
+      lng: longitude,
+      place: `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`,
     };
   }
 
