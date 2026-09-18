@@ -445,15 +445,21 @@ function getRecordsInRange() {
   });
 }
 
+function hasValidCoordinates(record) {
+  return Number.isFinite(record.lat) && Number.isFinite(record.lng);
+}
+
 function getMapVisibleRecords() {
+  const recordsWithLocation = getRecordsInRange()
+    .filter((record) => activeCategoryKeys.includes(record.category))
+    .filter(hasValidCoordinates);
+
   if (!window.map || typeof window.map.getBounds !== 'function') {
-    return getRecordsInRange().filter((record) => activeCategoryKeys.includes(record.category));
+    return recordsWithLocation;
   }
 
   const bounds = window.map.getBounds();
-  return getRecordsInRange()
-    .filter((record) => activeCategoryKeys.includes(record.category))
-    .filter((record) => bounds.contains([record.lat, record.lng]));
+  return recordsWithLocation.filter((record) => bounds.contains([record.lat, record.lng]));
 }
 
 function getMapAreaKm2() {
@@ -574,9 +580,16 @@ async function handlePhotoFile(file) {
   const capturedDate = parseExifDate(metadata.DateTimeOriginal || metadata.CreateDate || metadata.ModifyDate);
   recordDateTimeInput.value = toDateTimeLocalValue(capturedDate || new Date(file.lastModified || Date.now()));
 
-  const browserLocation = selectedPhotoSource === 'camera' && pendingPhotoLocation
-    ? await pendingPhotoLocation
-    : null;
+  let browserLocation = null;
+  if (selectedPhotoSource === 'camera') {
+    // Request a fresh fix now, right as the photo comes back from the camera app,
+    // since it's much closer to the moment of capture than the fix requested when
+    // the camera button was first pressed (the user may have moved in between).
+    browserLocation = await requestPhotoLocation();
+    if (!browserLocation && pendingPhotoLocation) {
+      browserLocation = await pendingPhotoLocation;
+    }
+  }
   const latitude = metadata.latitude ?? gpsCoordinateToDecimal(metadata.GPSLatitude, metadata.GPSLatitudeRef);
   const longitude = metadata.longitude ?? gpsCoordinateToDecimal(metadata.GPSLongitude, metadata.GPSLongitudeRef);
   if (browserLocation) {
@@ -904,8 +917,8 @@ async function saveRecordToDrive(event) {
       date: datePart,
       time: timePart || '12:00',
       place: selectedPhotoLocation?.place || (currentLanguage === 'ja' ? '写真から位置情報なし' : 'No location in photo'),
-      lat: selectedPhotoLocation?.lat ?? map.getCenter().lat,
-      lng: selectedPhotoLocation?.lng ?? map.getCenter().lng,
+      lat: Number.isFinite(selectedPhotoLocation?.lat) ? selectedPhotoLocation.lat : null,
+      lng: Number.isFinite(selectedPhotoLocation?.lng) ? selectedPhotoLocation.lng : null,
       photoFileId,
       photoFileName,
     };
@@ -1264,7 +1277,9 @@ function renderRecords() {
       <div class="record-time">${item.time}</div>
     `;
     article.addEventListener('click', () => {
-      map.flyTo([item.lat, item.lng], 17, { duration: 1.2 });
+      if (hasValidCoordinates(item)) {
+        map.flyTo([item.lat, item.lng], 17, { duration: 1.2 });
+      }
       openDetail(item);
     });
     recordList.appendChild(article);
@@ -1377,7 +1392,7 @@ function requestPhotoLocation() {
         place: currentLanguage === 'ja' ? '撮影地点' : 'Photo location',
       }),
       () => resolve(null),
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 },
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 },
     );
   });
 }
