@@ -486,7 +486,7 @@ h1 {
   border-radius: 24px 24px 0 0;
   box-shadow: 0 -22px 40px rgba(0, 0, 0, 0.42);
   border: 1px solid var(--line);
-  z-index: 800;
+  z-index: 1100;
   overflow: hidden;
 }
 
@@ -497,7 +497,7 @@ h1 {
   display: flex;
   align-items: flex-end;
   justify-content: center;
-  z-index: 900;
+  z-index: 1200;
 }
 
 .record-modal.hidden,
