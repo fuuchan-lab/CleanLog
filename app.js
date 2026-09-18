@@ -819,6 +819,8 @@ async function loadRecordsFromDrive() {
   renderDateRangeSummary();
 }
 
+const DRIVE_SESSION_KEY = 'cleanlog-drive-connected';
+
 async function handleGoogleLogin() {
   if (isGoogleLoggedIn) {
     window.alert(t('loginConnectedAlert'));
@@ -836,14 +838,33 @@ async function handleGoogleLogin() {
     await getDriveAccessToken();
     driveFolderId = await ensureDriveFolder();
     isGoogleLoggedIn = true;
+    localStorage.setItem(DRIVE_SESSION_KEY, '1');
     await fetchDriveUserAvatar();
     updateLoginState();
     window.alert(t('loginAlert'));
     await loadRecordsFromDrive();
   } catch (error) {
     isGoogleLoggedIn = false;
+    localStorage.removeItem(DRIVE_SESSION_KEY);
     updateLoginState();
     window.alert(t('loginFailedAlert'));
+  }
+}
+
+async function restoreDriveSession() {
+  if (!isDriveConfigured() || localStorage.getItem(DRIVE_SESSION_KEY) !== '1') return;
+
+  try {
+    await getDriveAccessToken(false);
+    driveFolderId = await ensureDriveFolder();
+    isGoogleLoggedIn = true;
+    await fetchDriveUserAvatar();
+    updateLoginState();
+    await loadRecordsFromDrive();
+  } catch (error) {
+    isGoogleLoggedIn = false;
+    localStorage.removeItem(DRIVE_SESSION_KEY);
+    updateLoginState();
   }
 }
 
@@ -1380,3 +1401,5 @@ renderRecords();
 renderMarkers();
 
 window.map = map;
+
+restoreDriveSession();
