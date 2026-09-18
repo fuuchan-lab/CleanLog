@@ -100,8 +100,11 @@ const photoPreview = document.getElementById('photoPreview');
 const recordModal = document.getElementById('recordModal');
 const closeRecordModal = document.getElementById('closeRecordModal');
 const recordForm = document.getElementById('recordForm');
+const saveRecordButton = document.getElementById('saveRecordButton');
 const googleLoginButton = document.getElementById('googleLoginButton');
 const googleLoginText = document.getElementById('googleLoginText');
+const googleMark = document.querySelector('.google-mark');
+const googleMarkInner = document.querySelector('.google-mark-inner');
 const languageSelect = document.getElementById('languageSelect');
 const dateRangeButton = document.getElementById('dateRangeButton');
 const dateRangeValue = document.getElementById('dateRangeValue');
@@ -117,10 +120,18 @@ const endCalendar = document.getElementById('endCalendar');
 
 const driveConfig = {
   folderName: 'CleanLog',
-  clientId: 'YOUR_GOOGLE_CLIENT_ID',
+  // Google Cloud Console > APIとサービス > 認証情報 で発行した
+  // OAuth クライアントID（ウェブアプリケーション）に置き換えてください。
+  clientId: '632134832719-kj2419t3d9ltfko0i70o11g9ssuj2j69.apps.googleusercontent.com',
+  scope: 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/userinfo.profile',
 };
 
 let isGoogleLoggedIn = false;
+let driveAccessToken = null;
+let driveFolderId = null;
+let driveTokenClient = null;
+let driveUserAvatarUrl = null;
+const driveImageUrlCache = new Map();
 let activeCategoryKeys = [...categories.map((category) => category.key), 'unclassified'];
 let currentLanguage = localStorage.getItem('cleanlog-language') || (navigator.language.toLowerCase().startsWith('ja') ? 'ja' : 'en');
 let selectedPhotoFile = null;
@@ -153,6 +164,15 @@ const translations = {
     loginAlert: 'Googleアカウントでログインしました。写真とデータは Google Drive の CleanLog フォルダーに保存されます。',
     savedAlert: '写真とデータを Google Drive の CleanLog フォルダーに保存しました。',
     deleteSavedAlert: '保存済みの記録とアイコンは残したまま、種類を一覧から削除しました。',
+    connecting: '接続中…',
+    clientIdMissingAlert: 'Google Drive連携用のクライアントIDが未設定です。app.js の driveConfig.clientId を設定してください。',
+    loginFailedAlert: 'Googleへのログインに失敗しました。もう一度お試しください。',
+    signInFirstAlert: '先にGoogleでログインしてください。',
+    saveFailedAlert: 'Google Driveへの保存に失敗しました。もう一度お試しください。',
+    savingToDrive: '保存中…',
+    updateFailedAlert: 'Google Driveへの更新の反映に失敗しました。',
+    deleteFailedAlert: 'Google Drive上のファイル削除に失敗しました。',
+    loadFailedAlert: 'Google Driveからの記録の読み込みに失敗しました。',
     weekdays: ['日', '月', '火', '水', '木', '金', '土'],
   },
   en: {
@@ -173,6 +193,15 @@ const translations = {
     loginAlert: 'You are now signed in with Google. Photos and data will be saved to the CleanLog folder.',
     savedAlert: 'The photo and data were saved to the CleanLog folder in Google Drive.',
     deleteSavedAlert: 'The saved record and its map icon remain, while this type was removed from the list.',
+    connecting: 'Connecting…',
+    clientIdMissingAlert: 'The Google Drive client ID is not configured. Please set driveConfig.clientId in app.js.',
+    loginFailedAlert: 'Failed to sign in with Google. Please try again.',
+    signInFirstAlert: 'Please sign in with Google first.',
+    saveFailedAlert: 'Failed to save to Google Drive. Please try again.',
+    savingToDrive: 'Saving…',
+    updateFailedAlert: 'Failed to sync the update to Google Drive.',
+    deleteFailedAlert: 'Failed to remove the file from Google Drive.',
+    loadFailedAlert: 'Failed to load records from Google Drive.',
     weekdays: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
   },
 };
@@ -601,21 +630,230 @@ function closeRecordModalView() {
 function updateLoginState() {
   googleLoginText.textContent = isGoogleLoggedIn ? t('connected') : t('login');
   googleLoginButton.style.opacity = isGoogleLoggedIn ? '1' : '0.96';
+
+  if (isGoogleLoggedIn && driveUserAvatarUrl) {
+    googleMark.style.backgroundImage = `url(${driveUserAvatarUrl})`;
+    googleMark.style.backgroundSize = 'cover';
+    googleMark.style.backgroundPosition = 'center';
+    googleMarkInner.style.display = 'none';
+  } else {
+    googleMark.style.backgroundImage = '';
+    googleMarkInner.style.display = '';
+  }
 }
 
-function handleGoogleLogin() {
+async function fetchDriveUserAvatar() {
+  try {
+    const response = await driveFetch('https://www.googleapis.com/oauth2/v2/userinfo');
+    const data = await response.json();
+    driveUserAvatarUrl = data.picture || null;
+  } catch (error) {
+    driveUserAvatarUrl = null;
+  }
+}
+
+function isDriveConfigured() {
+  return Boolean(driveConfig.clientId) && driveConfig.clientId.trim() !== 'YOUR_GOOGLE_CLIENT_ID';
+}
+
+function getDriveAccessToken(interactive = true) {
+  return new Promise((resolve, reject) => {
+    if (!window.google || !google.accounts || !google.accounts.oauth2) {
+      reject(new Error('google-identity-not-loaded'));
+      return;
+    }
+
+    if (!driveTokenClient) {
+      driveTokenClient = google.accounts.oauth2.initTokenClient({
+        client_id: driveConfig.clientId,
+        scope: driveConfig.scope,
+        callback: () => {},
+      });
+    }
+
+    driveTokenClient.callback = (response) => {
+      if (response.error) {
+        reject(response);
+        return;
+      }
+      driveAccessToken = response.access_token;
+      resolve(driveAccessToken);
+    };
+
+    driveTokenClient.requestAccessToken({
+      prompt: interactive && !driveAccessToken ? 'consent' : '',
+    });
+  });
+}
+
+async function driveFetch(path, options = {}, allowRetry = true) {
+  const response = await fetch(path, {
+    ...options,
+    headers: {
+      ...(options.headers || {}),
+      Authorization: `Bearer ${driveAccessToken}`,
+    },
+  });
+
+  if (response.status === 401 && allowRetry) {
+    await getDriveAccessToken(false);
+    return driveFetch(path, options, false);
+  }
+
+  if (!response.ok) {
+    const errorBody = await response.text().catch(() => '');
+    throw new Error(`Drive API error ${response.status}: ${errorBody}`);
+  }
+
+  return response;
+}
+
+async function ensureDriveFolder() {
+  const query = encodeURIComponent(
+    `name='${driveConfig.folderName}' and mimeType='application/vnd.google-apps.folder' and trashed=false`,
+  );
+  const listResponse = await driveFetch(
+    `https://www.googleapis.com/drive/v3/files?q=${query}&fields=files(id,name)&spaces=drive`,
+  );
+  const listData = await listResponse.json();
+  if (listData.files && listData.files.length > 0) {
+    return listData.files[0].id;
+  }
+
+  const createResponse = await driveFetch('https://www.googleapis.com/drive/v3/files?fields=id', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name: driveConfig.folderName, mimeType: 'application/vnd.google-apps.folder' }),
+  });
+  const createData = await createResponse.json();
+  return createData.id;
+}
+
+async function uploadFileToDrive(blob, name, mimeType, parentId) {
+  const metadata = { name, parents: [parentId] };
+  const boundary = `cleanlog-${Date.now()}`;
+  const metadataPart = `--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${JSON.stringify(metadata)}\r\n`;
+  const closeDelimiter = `\r\n--${boundary}--`;
+  const contentBuffer = await blob.arrayBuffer();
+
+  const body = new Blob([
+    metadataPart,
+    `--${boundary}\r\nContent-Type: ${mimeType}\r\n\r\n`,
+    contentBuffer,
+    closeDelimiter,
+  ]);
+
+  const response = await driveFetch(
+    'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id',
+    {
+      method: 'POST',
+      headers: { 'Content-Type': `multipart/related; boundary=${boundary}` },
+      body,
+    },
+  );
+  const data = await response.json();
+  return data.id;
+}
+
+async function updateDriveFileContent(fileId, blob, mimeType) {
+  await driveFetch(`https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=media`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': mimeType },
+    body: blob,
+  });
+}
+
+async function trashDriveFile(fileId) {
+  if (!fileId) return;
+  await driveFetch(`https://www.googleapis.com/drive/v3/files/${fileId}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ trashed: true }),
+  });
+}
+
+async function hydrateRecordImage(record) {
+  if (!record.photoFileId) return;
+
+  if (driveImageUrlCache.has(record.photoFileId)) {
+    record.image = driveImageUrlCache.get(record.photoFileId);
+    return;
+  }
+
+  try {
+    const response = await driveFetch(`https://www.googleapis.com/drive/v3/files/${record.photoFileId}?alt=media`);
+    const blob = await response.blob();
+    const url = URL.createObjectURL(blob);
+    driveImageUrlCache.set(record.photoFileId, url);
+    record.image = url;
+  } catch (error) {
+    // Keep whatever placeholder image the record already had.
+  }
+}
+
+async function loadRecordsFromDrive() {
+  const query = encodeURIComponent(`'${driveFolderId}' in parents and mimeType='application/json' and trashed=false`);
+  const listResponse = await driveFetch(
+    `https://www.googleapis.com/drive/v3/files?q=${query}&fields=files(id,name)&orderBy=name desc&spaces=drive`,
+  );
+  const listData = await listResponse.json();
+  const files = listData.files || [];
+
+  const loadedRecords = await Promise.all(
+    files.map(async (file) => {
+      const contentResponse = await driveFetch(`https://www.googleapis.com/drive/v3/files/${file.id}?alt=media`);
+      const data = await contentResponse.json();
+      return { ...data, dataFileId: file.id };
+    }),
+  );
+
+  loadedRecords.sort((a, b) => parseDate(b.date) - parseDate(a.date));
+  records.length = 0;
+  records.push(...loadedRecords);
+
+  await Promise.all(records.map(hydrateRecordImage));
+
+  setDefaultDateRange();
+  renderRecords();
+  renderMarkers(activeCategoryKeys);
+  renderDateRangeSummary();
+}
+
+async function handleGoogleLogin() {
   if (isGoogleLoggedIn) {
     window.alert(t('loginConnectedAlert'));
     return;
   }
 
-  isGoogleLoggedIn = true;
-  updateLoginState();
-  window.alert(t('loginAlert'));
+  if (!isDriveConfigured()) {
+    window.alert(t('clientIdMissingAlert'));
+    return;
+  }
+
+  googleLoginText.textContent = t('connecting');
+
+  try {
+    await getDriveAccessToken();
+    driveFolderId = await ensureDriveFolder();
+    isGoogleLoggedIn = true;
+    await fetchDriveUserAvatar();
+    updateLoginState();
+    window.alert(t('loginAlert'));
+    await loadRecordsFromDrive();
+  } catch (error) {
+    isGoogleLoggedIn = false;
+    updateLoginState();
+    window.alert(t('loginFailedAlert'));
+  }
 }
 
 async function saveRecordToDrive(event) {
   event.preventDefault();
+
+  if (!isGoogleLoggedIn) {
+    window.alert(t('signInFirstAlert'));
+    return;
+  }
 
   if (selectedPhotoSource === 'camera' && pendingPhotoLocation && !selectedPhotoLocation) {
     selectedPhotoLocation = await pendingPhotoLocation;
@@ -627,29 +865,60 @@ async function saveRecordToDrive(event) {
   const title = getCategoryLabel(categoryInfo);
   const dateTimeValue = recordDateTimeInput.value || toDateTimeLocalValue(new Date());
   const [datePart, timePart] = dateTimeValue.split('T');
+  const id = Date.now();
 
-  const payload = {
-    id: Date.now(),
-    title,
-    category,
-    date: datePart,
-    time: timePart || '12:00',
-    place: selectedPhotoLocation?.place || (currentLanguage === 'ja' ? '写真から位置情報なし' : 'No location in photo'),
-    lat: selectedPhotoLocation?.lat ?? map.getCenter().lat,
-    lng: selectedPhotoLocation?.lng ?? map.getCenter().lng,
-    image: file ? URL.createObjectURL(file) : 'https://images.unsplash.com/photo-1517849845537-4d257902454a?auto=format&fit=crop&w=600&q=80',
-    savedToDrive: true,
-    driveFolder: driveConfig.folderName,
-  };
-  payload.dataFileName = `CleanLog-${payload.id}.json`;
-  payload.photoFileName = `CleanLog-${payload.id}.jpg`;
+  saveRecordButton.disabled = true;
+  saveRecordButton.textContent = t('savingToDrive');
 
-  records.unshift(payload);
-  renderRecords();
-  renderMarkers();
-  closeRecordModalView();
-  openDetail(payload);
-  window.alert(`${t('savedAlert')}\n${payload.dataFileName}`);
+  try {
+    const photoFileName = `CleanLog-${id}.jpg`;
+    const photoFileId = file
+      ? await uploadFileToDrive(file, photoFileName, file.type || 'image/jpeg', driveFolderId)
+      : null;
+
+    const payload = {
+      id,
+      title,
+      category,
+      date: datePart,
+      time: timePart || '12:00',
+      place: selectedPhotoLocation?.place || (currentLanguage === 'ja' ? '写真から位置情報なし' : 'No location in photo'),
+      lat: selectedPhotoLocation?.lat ?? map.getCenter().lat,
+      lng: selectedPhotoLocation?.lng ?? map.getCenter().lng,
+      photoFileId,
+      photoFileName,
+    };
+
+    const dataFileName = `CleanLog-${id}.json`;
+    const dataFileId = await uploadFileToDrive(
+      new Blob([JSON.stringify(payload)], { type: 'application/json' }),
+      dataFileName,
+      'application/json',
+      driveFolderId,
+    );
+
+    const record = {
+      ...payload,
+      dataFileId,
+      dataFileName,
+      image: file ? URL.createObjectURL(file) : '',
+    };
+    if (photoFileId && record.image) {
+      driveImageUrlCache.set(photoFileId, record.image);
+    }
+
+    records.unshift(record);
+    renderRecords();
+    renderMarkers();
+    closeRecordModalView();
+    openDetail(record);
+    window.alert(`${t('savedAlert')}\n${dataFileName}`);
+  } catch (error) {
+    window.alert(t('saveFailedAlert'));
+  } finally {
+    saveRecordButton.disabled = false;
+    saveRecordButton.textContent = t('saveDrive');
+  }
 }
 
 addRecordButton.addEventListener('click', openRecordModal);
@@ -729,7 +998,7 @@ function cancelDetailEdit() {
   detailEditForm.classList.add('hidden');
 }
 
-function updateDetailRecord() {
+async function updateDetailRecord() {
   if (!activeDetailRecord) return;
   const nextCategory = detailCategoryInput.value || 'unclassified';
   const nextDateTime = detailDateTimeInput.value || getDetailDateTimeValue(activeDetailRecord);
@@ -738,21 +1007,45 @@ function updateDetailRecord() {
   activeDetailRecord.title = getCategoryLabel(categoryMap[nextCategory]);
   activeDetailRecord.date = date.replace(/-/g, '/');
   activeDetailRecord.time = time || '12:00';
+
+  if (isGoogleLoggedIn && activeDetailRecord.dataFileId) {
+    try {
+      const { image, dataFileId, dataFileName, ...persisted } = activeDetailRecord;
+      await updateDriveFileContent(
+        dataFileId,
+        new Blob([JSON.stringify(persisted)], { type: 'application/json' }),
+        'application/json',
+      );
+    } catch (error) {
+      window.alert(t('updateFailedAlert'));
+    }
+  }
+
   renderRecords();
   renderMarkers(activeCategoryKeys);
   renderDateRangeSummary();
   openDetail(activeDetailRecord);
 }
 
-function deleteDetailRecord() {
+async function deleteDetailRecord() {
   if (!activeDetailRecord) return;
-  const recordIndex = records.findIndex((record) => record.id === activeDetailRecord.id);
+  const recordToDelete = activeDetailRecord;
+  const recordIndex = records.findIndex((record) => record.id === recordToDelete.id);
   if (recordIndex >= 0) records.splice(recordIndex, 1);
   renderRecords();
   renderMarkers(activeCategoryKeys);
   renderDateRangeSummary();
   activeDetailRecord = null;
   closeDetail();
+
+  if (isGoogleLoggedIn && recordToDelete.dataFileId) {
+    try {
+      await trashDriveFile(recordToDelete.dataFileId);
+      await trashDriveFile(recordToDelete.photoFileId);
+    } catch (error) {
+      window.alert(t('deleteFailedAlert'));
+    }
+  }
 }
 
 function closeDetail() {
