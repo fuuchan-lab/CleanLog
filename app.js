@@ -1430,6 +1430,20 @@ function renderMarkers(activeCategories = activeCategoryKeys) {
     });
 }
 
+function placeCurrentLocationMarker(currentLocation) {
+  if (window.currentLocationMarker) {
+    window.currentLocationMarker.setLatLng(currentLocation);
+  } else {
+    window.currentLocationMarker = L.circleMarker(currentLocation, {
+      radius: 8,
+      color: '#fff8f1',
+      weight: 3,
+      fillColor: '#a86b43',
+      fillOpacity: 1,
+    }).addTo(map);
+  }
+}
+
 function centerOnCurrentLocation() {
   if (!navigator.geolocation) {
     window.alert(currentLanguage === 'ja' ? 'この端末では位置情報を利用できません。' : 'Location is not available on this device.');
@@ -1440,22 +1454,29 @@ function centerOnCurrentLocation() {
     (position) => {
       const currentLocation = [position.coords.latitude, position.coords.longitude];
       map.setView(currentLocation, 17, { animate: true });
-      if (window.currentLocationMarker) {
-        window.currentLocationMarker.setLatLng(currentLocation);
-      } else {
-        window.currentLocationMarker = L.circleMarker(currentLocation, {
-          radius: 8,
-          color: '#fff8f1',
-          weight: 3,
-          fillColor: '#a86b43',
-          fillOpacity: 1,
-        }).addTo(map);
-      }
+      placeCurrentLocationMarker(currentLocation);
     },
     () => {
       window.alert(currentLanguage === 'ja'
         ? '現在地を取得できませんでした。ブラウザーの位置情報を許可してください。'
         : 'Could not get your location. Please allow location access in your browser.');
+    },
+    { enableHighAccuracy: true, timeout: 10000, maximumAge: 30000 },
+  );
+}
+
+function centerMapOnCurrentLocationOnLoad() {
+  if (!navigator.geolocation || !window.isSecureContext) return;
+
+  navigator.geolocation.getCurrentPosition(
+    (position) => {
+      const currentLocation = [position.coords.latitude, position.coords.longitude];
+      map.setView(currentLocation, 15, { animate: true });
+      placeCurrentLocationMarker(currentLocation);
+    },
+    () => {
+      // Keep whatever view the map already has (default center, or fit to
+      // existing records); the locate button remains available to retry.
     },
     { enableHighAccuracy: true, timeout: 10000, maximumAge: 30000 },
   );
@@ -1533,4 +1554,9 @@ renderMarkers();
 
 window.map = map;
 
-restoreDriveSession();
+// Let Drive records finish loading (and fitting the map to them) first, so
+// the current-location center requested on top of that always has the
+// final say on where the map ends up.
+restoreDriveSession().finally(() => {
+  centerMapOnCurrentLocationOnLoad();
+});
