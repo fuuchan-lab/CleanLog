@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#c98653" />
+      <stop offset="1" stop-color="#74452e" />
+    </linearGradient>
+  </defs>
+
+  <rect width="512" height="512" rx="112" fill="url(#bg)" />
+
+  <!-- trash can handle -->
+  <rect x="223" y="118" width="66" height="30" rx="15" fill="#fff8f1" />
+
+  <!-- trash can lid -->
+  <rect x="150" y="154" width="212" height="34" rx="17" fill="#fff8f1" />
+
+  <!-- trash can body -->
+  <path
+    d="M176 206 L336 206 L316 388 C315 400 305 409 293 409 L219 409 C207 409 197 400 196 388 Z"
+    fill="#fff8f1"
+  />
+
+  <!-- ridge lines -->
+  <rect x="222" y="240" width="18" height="130" rx="9" fill="#a86b43" />
+  <rect x="247" y="240" width="18" height="130" rx="9" fill="#a86b43" />
+  <rect x="272" y="240" width="18" height="130" rx="9" fill="#a86b43" />
+</svg>
