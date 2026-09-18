@@ -126,6 +126,7 @@ let currentLanguage = localStorage.getItem('cleanlog-language') || (navigator.la
 let selectedPhotoFile = null;
 let selectedPhotoLocation = null;
 let selectedPhotoSource = 'camera';
+let pendingPhotoLocation = null;
 let activeDetailRecord = null;
 
 const dateRange = {
@@ -544,9 +545,14 @@ async function handlePhotoFile(file) {
   const capturedDate = parseExifDate(metadata.DateTimeOriginal || metadata.CreateDate || metadata.ModifyDate);
   recordDateTimeInput.value = toDateTimeLocalValue(capturedDate || new Date(file.lastModified || Date.now()));
 
+  const browserLocation = selectedPhotoSource === 'camera' && pendingPhotoLocation
+    ? await pendingPhotoLocation
+    : null;
   const latitude = metadata.latitude ?? gpsCoordinateToDecimal(metadata.GPSLatitude, metadata.GPSLatitudeRef);
   const longitude = metadata.longitude ?? gpsCoordinateToDecimal(metadata.GPSLongitude, metadata.GPSLongitudeRef);
-  if (Number.isFinite(latitude) && Number.isFinite(longitude)) {
+  if (browserLocation) {
+    selectedPhotoLocation = browserLocation;
+  } else if (Number.isFinite(latitude) && Number.isFinite(longitude)) {
     selectedPhotoLocation = {
       lat: latitude,
       lng: longitude,
@@ -555,10 +561,6 @@ async function handlePhotoFile(file) {
   }
 
   recordCategoryInput.value = classifyPhoto(file);
-
-  if (!selectedPhotoLocation && selectedPhotoSource === 'camera') {
-    tryGetCurrentLocationForPhoto();
-  }
 }
 
 function handlePhotoSelected() {
@@ -582,6 +584,7 @@ function openRecordModal(source = 'camera') {
   selectedPhotoFile = null;
   selectedPhotoLocation = null;
   selectedPhotoSource = source;
+  pendingPhotoLocation = source === 'camera' ? requestPhotoLocation() : null;
   recordCategoryInput.value = '';
   if (source === 'album') {
     albumInput.value = '';
@@ -611,8 +614,12 @@ function handleGoogleLogin() {
   window.alert(t('loginAlert'));
 }
 
-function saveRecordToDrive(event) {
+async function saveRecordToDrive(event) {
   event.preventDefault();
+
+  if (selectedPhotoSource === 'camera' && pendingPhotoLocation && !selectedPhotoLocation) {
+    selectedPhotoLocation = await pendingPhotoLocation;
+  }
 
   const file = selectedPhotoFile || (photoInput.files && photoInput.files[0]);
   const category = recordCategoryInput.value || 'unclassified';
@@ -1045,20 +1052,20 @@ function centerOnCurrentLocation() {
   );
 }
 
-function tryGetCurrentLocationForPhoto() {
-  if (!navigator.geolocation || !window.isSecureContext) return;
+function requestPhotoLocation() {
+  if (!navigator.geolocation || !window.isSecureContext) return Promise.resolve(null);
 
-  navigator.geolocation.getCurrentPosition(
-    (position) => {
-      selectedPhotoLocation = {
+  return new Promise((resolve) => {
+    navigator.geolocation.getCurrentPosition(
+      (position) => resolve({
         lat: position.coords.latitude,
         lng: position.coords.longitude,
         place: currentLanguage === 'ja' ? '撮影地点' : 'Photo location',
-      };
-    },
-    () => {},
-    { enableHighAccuracy: true, timeout: 5000, maximumAge: 30000 },
-  );
+      }),
+      () => resolve(null),
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 },
+    );
+  });
 }
 
 const map = L.map('map', {
