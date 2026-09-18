@@ -404,19 +404,18 @@ function formatRangeLabel(startDate, endDate) {
 
 function getLatestDate() {
   const dates = records.map((record) => record.date).filter(Boolean).sort((a, b) => parseDate(b) - parseDate(a));
-  return dates[0] || '2026/09/12';
+  return dates[0] || getTodayDateString();
 }
 
-function getEarliestDate() {
-  const dates = records.map((record) => record.date).filter(Boolean).sort((a, b) => parseDate(a) - parseDate(b));
-  return dates[0] || '2026/09/09';
+function getTodayDateString() {
+  const now = new Date();
+  return `${now.getFullYear()}/${padDatePart(now.getMonth() + 1)}/${padDatePart(now.getDate())}`;
 }
 
 function setDefaultDateRange() {
-  const earliestDate = getEarliestDate();
-  const latestDate = getLatestDate();
-  dateRange.start = earliestDate;
-  dateRange.end = latestDate;
+  const today = getTodayDateString();
+  dateRange.start = today;
+  dateRange.end = today;
   dateRangeValue.textContent = formatRangeLabel(dateRange.start, dateRange.end);
 }
 
