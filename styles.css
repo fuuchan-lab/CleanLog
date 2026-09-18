@@ -52,10 +52,17 @@ button {
   gap: 14px;
 }
 
+.app-shell > * {
+  /* Flex items default to min-width: auto, which lets a child's own
+     content (e.g. nested grid text) force it wider than the viewport
+     instead of shrinking to fit. */
+  min-width: 0;
+}
+
 .topbar {
   min-width: 0;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr) minmax(0, auto);
   align-items: center;
   padding: 4px 2px 0;
 }
@@ -65,7 +72,8 @@ button {
 }
 
 .topbar-actions {
-  flex: 0 0 auto;
+  min-width: 0;
+  flex: 0 1 auto;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -119,6 +127,12 @@ h1 {
   font-size: 0.78rem;
   white-space: nowrap;
   box-shadow: 0 8px 18px rgba(0, 0, 0, 0.2);
+}
+
+#googleLoginText {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .google-mark {
@@ -757,7 +771,10 @@ h1 {
   color-scheme: dark;
   accent-color: var(--green);
   padding: 12px 14px;
-  font: inherit;
+  font-family: inherit;
+  /* iOS Safari auto-zooms into any input/select with a computed font-size
+     under 16px, so this can't just inherit the 0.8rem .field size. */
+  font-size: 16px;
 }
 
 .date-calendar {
