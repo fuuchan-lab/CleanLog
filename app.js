@@ -148,7 +148,7 @@ const dateRange = {
 const translations = {
   ja: {
     appTagline: 'ゴミ拾い記録帳', settings: '設定', login: 'ログイン', connected: 'Google接続中',
-    recordPeriod: '記録期間', periodCount: '期間・地図中の件数', density: 'ごみ密度 (個/km²)',
+    recordPeriod: '記録期間', periodCount: '期間/地図中の数', density: 'ごみ密度 (個/km²)',
     map: 'ごみ分布マップ', addRecord: '新しい記録を追加', categories: 'ごみの種類', all: '全て表示',
     recent: '最近の記録', periodFilter: '期間指定', details: '記録詳細', close: '閉じる',
     recordTitle: '記録タイトル', place: '場所', notes: '写真と位置情報を元に、ゴミの状態と種類を記録しています。',
@@ -1378,6 +1378,8 @@ function renderMarkers(activeCategories = activeCategoryKeys) {
   if (matchingRecords.length > 1) {
     const bounds = L.latLngBounds(matchingRecords.map((record) => [record.lat, record.lng]));
     map.fitBounds(bounds, { padding: [24, 24] });
+  } else if (matchingRecords.length === 1) {
+    map.setView([matchingRecords[0].lat, matchingRecords[0].lng], Math.max(map.getZoom(), 16));
   }
 
   window.mapMarkers.forEach((marker) => map.removeLayer(marker));
