@@ -399,6 +399,21 @@ h1 {
   display: none;
 }
 
+.location-status {
+  margin: 8px 0 0;
+  font-size: 0.74rem;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+.location-status.error {
+  color: var(--danger);
+}
+
+.location-status.hidden {
+  display: none;
+}
+
 .record-main {
   min-width: 0;
 }

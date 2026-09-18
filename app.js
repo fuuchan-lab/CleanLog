@@ -97,6 +97,7 @@ const recordCategoryInput = document.getElementById('recordCategory');
 const recordDateTimeInput = document.getElementById('recordDateTime');
 const photoInput = document.getElementById('photoInput');
 const photoPreview = document.getElementById('photoPreview');
+const locationStatusText = document.getElementById('locationStatusText');
 const recordModal = document.getElementById('recordModal');
 const closeRecordModal = document.getElementById('closeRecordModal');
 const recordForm = document.getElementById('recordForm');
@@ -615,7 +616,23 @@ async function handlePhotoFile(file) {
     };
   }
 
+  updateLocationStatus();
   recordCategoryInput.value = classifyPhoto(file);
+}
+
+function updateLocationStatus() {
+  locationStatusText.classList.remove('hidden', 'error');
+
+  if (selectedPhotoLocation) {
+    locationStatusText.textContent = currentLanguage === 'ja'
+      ? `位置情報: ${selectedPhotoLocation.lat.toFixed(5)}, ${selectedPhotoLocation.lng.toFixed(5)}`
+      : `Location: ${selectedPhotoLocation.lat.toFixed(5)}, ${selectedPhotoLocation.lng.toFixed(5)}`;
+    return;
+  }
+
+  locationStatusText.classList.add('error');
+  locationStatusText.textContent = lastGeolocationErrorMessage
+    || (currentLanguage === 'ja' ? '写真から位置情報を取得できませんでした。' : 'Could not get a location from this photo.');
 }
 
 function handlePhotoSelected() {
@@ -636,6 +653,8 @@ function openRecordModal(source = 'camera') {
   recordForm.reset();
   photoPreview.removeAttribute('src');
   photoPreview.classList.add('hidden');
+  locationStatusText.classList.add('hidden');
+  locationStatusText.textContent = '';
   selectedPhotoFile = null;
   selectedPhotoLocation = null;
   selectedPhotoSource = source;
@@ -1442,17 +1461,53 @@ function centerOnCurrentLocation() {
   );
 }
 
+function describeGeolocationError(error) {
+  if (error && error.code === 1) {
+    return currentLanguage === 'ja'
+      ? '位置情報の利用が許可されていません。ブラウザまたは端末の設定で位置情報へのアクセスを許可してください。'
+      : 'Location access was denied. Please allow location access in your browser or device settings.';
+  }
+  if (error && error.code === 3) {
+    return currentLanguage === 'ja'
+      ? '位置情報の取得がタイムアウトしました。電波・GPSの入りが良い場所でもう一度お試しください。'
+      : 'Getting your location timed out. Please try again somewhere with a clearer GPS signal.';
+  }
+  return currentLanguage === 'ja'
+    ? '現在位置を取得できませんでした。'
+    : 'Could not get your current location.';
+}
+
+let lastGeolocationErrorMessage = null;
+
 function requestPhotoLocation() {
-  if (!navigator.geolocation || !window.isSecureContext) return Promise.resolve(null);
+  if (!navigator.geolocation) {
+    lastGeolocationErrorMessage = currentLanguage === 'ja'
+      ? 'この端末・ブラウザーは位置情報に対応していません。'
+      : 'This device or browser does not support geolocation.';
+    return Promise.resolve(null);
+  }
+
+  if (!window.isSecureContext) {
+    lastGeolocationErrorMessage = currentLanguage === 'ja'
+      ? '安全な接続(HTTPS)で開かれていないため、位置情報を利用できません。'
+      : 'Location isn’t available because this page wasn’t opened over a secure (HTTPS) connection.';
+    return Promise.resolve(null);
+  }
 
   return new Promise((resolve) => {
     navigator.geolocation.getCurrentPosition(
-      (position) => resolve({
-        lat: position.coords.latitude,
-        lng: position.coords.longitude,
-        place: currentLanguage === 'ja' ? '撮影地点' : 'Photo location',
-      }),
-      () => resolve(null),
+      (position) => {
+        lastGeolocationErrorMessage = null;
+        resolve({
+          lat: position.coords.latitude,
+          lng: position.coords.longitude,
+          place: currentLanguage === 'ja' ? '撮影地点' : 'Photo location',
+        });
+      },
+      (error) => {
+        lastGeolocationErrorMessage = describeGeolocationError(error);
+        resolve(null);
+      },
       { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 },
     );
   });
