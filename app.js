@@ -668,6 +668,37 @@ function isDriveConfigured() {
   return Boolean(driveConfig.clientId) && driveConfig.clientId.trim() !== 'YOUR_GOOGLE_CLIENT_ID';
 }
 
+const DRIVE_TOKEN_KEY = 'cleanlog-drive-token';
+
+function storeDriveAccessToken(accessToken, expiresInSeconds) {
+  const expiresInMs = Number(expiresInSeconds) > 0 ? Number(expiresInSeconds) * 1000 : 55 * 60 * 1000;
+  try {
+    localStorage.setItem(DRIVE_TOKEN_KEY, JSON.stringify({
+      accessToken,
+      expiresAt: Date.now() + expiresInMs,
+    }));
+  } catch (error) {
+    // Ignore storage failures (e.g. private browsing quota); the token still works in memory.
+  }
+}
+
+function getStoredDriveAccessToken() {
+  try {
+    const raw = localStorage.getItem(DRIVE_TOKEN_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (!parsed.accessToken || !Number.isFinite(parsed.expiresAt)) return null;
+    if (parsed.expiresAt <= Date.now() + 30000) return null;
+    return parsed.accessToken;
+  } catch (error) {
+    return null;
+  }
+}
+
+function clearStoredDriveAccessToken() {
+  localStorage.removeItem(DRIVE_TOKEN_KEY);
+}
+
 function getDriveAccessToken(interactive = true) {
   return new Promise((resolve, reject) => {
     if (!window.google || !google.accounts || !google.accounts.oauth2) {
@@ -689,6 +720,7 @@ function getDriveAccessToken(interactive = true) {
         return;
       }
       driveAccessToken = response.access_token;
+      storeDriveAccessToken(driveAccessToken, response.expires_in);
       resolve(driveAccessToken);
     };
 
@@ -858,6 +890,7 @@ async function handleGoogleLogin() {
   } catch (error) {
     isGoogleLoggedIn = false;
     localStorage.removeItem(DRIVE_SESSION_KEY);
+    clearStoredDriveAccessToken();
     updateLoginState();
     window.alert(t('loginFailedAlert'));
   }
@@ -867,7 +900,13 @@ async function restoreDriveSession() {
   if (!isDriveConfigured() || localStorage.getItem(DRIVE_SESSION_KEY) !== '1') return;
 
   try {
-    await getDriveAccessToken(false);
+    // Reuse a still-valid token from a previous page load first; it works even
+    // when the browser blocks the third-party cookies that silent GIS reauth
+    // (prompt: '') needs, which made reloads log the user back out.
+    driveAccessToken = getStoredDriveAccessToken();
+    if (!driveAccessToken) {
+      await getDriveAccessToken(false);
+    }
     driveFolderId = await ensureDriveFolder();
     isGoogleLoggedIn = true;
     await fetchDriveUserAvatar();
@@ -875,7 +914,9 @@ async function restoreDriveSession() {
     await loadRecordsFromDrive();
   } catch (error) {
     isGoogleLoggedIn = false;
+    driveAccessToken = null;
     localStorage.removeItem(DRIVE_SESSION_KEY);
+    clearStoredDriveAccessToken();
     updateLoginState();
   }
 }
