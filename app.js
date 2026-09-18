@@ -18,7 +18,7 @@ const records = [
     place: '公園入口',
     lat: 35.6813,
     lng: 139.7654,
-    image: 'https://images.unsplash.com/photo-1517849845537-4d257902454a?auto=format&fit=crop&w=600&q=80',
+    image: '',
   },
   {
     id: 2,
@@ -29,7 +29,7 @@ const records = [
     place: '歩道脇',
     lat: 35.6828,
     lng: 139.7694,
-    image: 'https://images.unsplash.com/photo-1528825871115-3581a5387919?auto=format&fit=crop&w=600&q=80',
+    image: '',
   },
   {
     id: 3,
@@ -40,7 +40,7 @@ const records = [
     place: 'ベンチ横',
     lat: 35.6799,
     lng: 139.7683,
-    image: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=600&q=80',
+    image: '',
   },
   {
     id: 4,
@@ -51,7 +51,7 @@ const records = [
     place: '階段の下',
     lat: 35.6806,
     lng: 139.7742,
-    image: 'https://images.unsplash.com/photo-1513558161293-cdaf765ed2e6?auto=format&fit=crop&w=600&q=80',
+    image: '',
   },
 ];
 
@@ -212,6 +212,20 @@ function t(key) {
 
 function getCategoryLabel(category) {
   return currentLanguage === 'en' ? (category.labelEn || category.label) : category.label;
+}
+
+function buildPlaceholderImage(color, label) {
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="240" height="240">`
+    + `<rect width="240" height="240" fill="${color}"/>`
+    + `<text x="120" y="146" font-family="sans-serif" font-size="104" fill="#fff8f1" text-anchor="middle">${label}</text>`
+    + `</svg>`;
+  return `data:image/svg+xml,${encodeURIComponent(svg)}`;
+}
+
+function getRecordImageSrc(record) {
+  if (record.image) return record.image;
+  const category = categoryMap[record.category] || categoryMap.unclassified;
+  return buildPlaceholderImage(category.color, getCategoryLabel(category).slice(0, 1));
 }
 
 function updateInstallGuide() {
@@ -1037,7 +1051,7 @@ applyTranslations();
 function openDetail(record) {
   activeDetailRecord = record;
   const category = categoryMap[record.category];
-  detailImage.src = record.image;
+  detailImage.src = getRecordImageSrc(record);
   detailImage.alt = record.title;
   detailCategoryBadge.textContent = getCategoryLabel(category);
   detailCategoryBadge.style.background = category.color;
@@ -1308,7 +1322,7 @@ function renderRecords() {
     const article = document.createElement('article');
     article.className = 'record-item';
     article.innerHTML = `
-      <img class="record-photo" src="${item.image}" alt="${item.title}" />
+      <img class="record-photo" src="${getRecordImageSrc(item)}" alt="${item.title}" />
       <div class="record-main">
         <p class="record-title">${item.title}</p>
         <div class="record-meta">${item.place}</div>
@@ -1330,7 +1344,7 @@ function buildPopupContent(record) {
   const category = categoryMap[record.category];
   return `
     <div class="record-popup">
-      <img src="${record.image}" alt="${record.title}" />
+      <img src="${getRecordImageSrc(record)}" alt="${record.title}" />
       <h4>${record.title}</h4>
       <p>${record.place}</p>
       <p>${record.date || '2026/09/12'} ${record.time}</p>
@@ -1354,10 +1368,15 @@ function renderMarkers(activeCategories = activeCategoryKeys) {
     window.mapMarkers = [];
   }
 
-  const visibleMarkers = getMapVisibleRecords().filter((record) => activeCategories.includes(record.category));
+  // Fit to every matching record, not just the ones already inside the current
+  // view - otherwise a marker that falls outside the map's last position can
+  // never pull the view back out to include it again.
+  const matchingRecords = getRecordsInRange()
+    .filter((record) => activeCategories.includes(record.category))
+    .filter(hasValidCoordinates);
 
-  if (visibleMarkers.length > 1) {
-    const bounds = L.latLngBounds(visibleMarkers.map((record) => [record.lat, record.lng]));
+  if (matchingRecords.length > 1) {
+    const bounds = L.latLngBounds(matchingRecords.map((record) => [record.lat, record.lng]));
     map.fitBounds(bounds, { padding: [24, 24] });
   }
 
