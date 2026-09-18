@@ -121,10 +121,11 @@ const driveConfig = {
 };
 
 let isGoogleLoggedIn = false;
-let activeCategoryKeys = categories.map((category) => category.key);
+let activeCategoryKeys = [...categories.map((category) => category.key), 'unclassified'];
 let currentLanguage = localStorage.getItem('cleanlog-language') || (navigator.language.toLowerCase().startsWith('ja') ? 'ja' : 'en');
 let selectedPhotoFile = null;
 let selectedPhotoLocation = null;
+let selectedPhotoSource = 'camera';
 let activeDetailRecord = null;
 
 const dateRange = {
@@ -554,6 +555,10 @@ async function handlePhotoFile(file) {
   }
 
   recordCategoryInput.value = classifyPhoto(file);
+
+  if (!selectedPhotoLocation && selectedPhotoSource === 'camera') {
+    tryGetCurrentLocationForPhoto();
+  }
 }
 
 function handlePhotoSelected() {
@@ -576,6 +581,7 @@ function openRecordModal(source = 'camera') {
   photoPreview.classList.add('hidden');
   selectedPhotoFile = null;
   selectedPhotoLocation = null;
+  selectedPhotoSource = source;
   recordCategoryInput.value = '';
   if (source === 'album') {
     albumInput.value = '';
@@ -622,8 +628,8 @@ function saveRecordToDrive(event) {
     date: datePart,
     time: timePart || '12:00',
     place: selectedPhotoLocation?.place || (currentLanguage === 'ja' ? '写真から位置情報なし' : 'No location in photo'),
-    lat: selectedPhotoLocation?.lat ?? 35.6812,
-    lng: selectedPhotoLocation?.lng ?? 139.7671,
+    lat: selectedPhotoLocation?.lat ?? map.getCenter().lat,
+    lng: selectedPhotoLocation?.lng ?? map.getCenter().lng,
     image: file ? URL.createObjectURL(file) : 'https://images.unsplash.com/photo-1517849845537-4d257902454a?auto=format&fit=crop&w=600&q=80',
     savedToDrive: true,
     driveFolder: driveConfig.folderName,
@@ -985,9 +991,9 @@ function renderMarkers(activeCategories = activeCategoryKeys) {
   getMapVisibleRecords()
     .filter((record) => activeCategories.includes(record.category))
     .forEach((record) => {
-      const category = categoryMap[record.category];
+      const category = categoryMap[record.category] || categoryMap.unclassified;
       const marker = L.marker([record.lat, record.lng], {
-        icon: buildMarkerIcon(category.color, category.label.slice(0, 1)),
+        icon: buildMarkerIcon(category.color, getCategoryLabel(category).slice(0, 1)),
       }).addTo(map);
       marker.recordId = record.id;
 
@@ -1036,6 +1042,22 @@ function centerOnCurrentLocation() {
         : 'Could not get your location. Please allow location access in your browser.');
     },
     { enableHighAccuracy: true, timeout: 10000, maximumAge: 30000 },
+  );
+}
+
+function tryGetCurrentLocationForPhoto() {
+  if (!navigator.geolocation || !window.isSecureContext) return;
+
+  navigator.geolocation.getCurrentPosition(
+    (position) => {
+      selectedPhotoLocation = {
+        lat: position.coords.latitude,
+        lng: position.coords.longitude,
+        place: currentLanguage === 'ja' ? '撮影地点' : 'Photo location',
+      };
+    },
+    () => {},
+    { enableHighAccuracy: true, timeout: 5000, maximumAge: 30000 },
   );
 }
 
