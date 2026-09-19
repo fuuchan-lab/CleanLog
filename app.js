@@ -609,24 +609,22 @@ async function handlePhotoFile(file) {
   const capturedDate = parseExifDate(metadata.DateTimeOriginal || metadata.CreateDate || metadata.ModifyDate);
   recordDateTimeInput.value = toDateTimeLocalValue(capturedDate || new Date(file.lastModified || Date.now()));
 
-  let browserLocation = null;
-  if (selectedPhotoSource === 'camera') {
-    // Request the fix now, right as the photo comes back from the camera app -
-    // a single request here, rather than racing it against one fired the
-    // instant the camera button was pressed, avoids two concurrent
-    // getCurrentPosition() calls interfering with each other.
-    browserLocation = await requestPhotoLocation();
-  }
+  // Prefer the photo's own GPS EXIF over a live browser geolocation request:
+  // it reflects the instant the shutter was actually pressed, whereas a
+  // browser fix taken after returning from the camera app can be seconds (or
+  // more, if the photo was reviewed before confirming) removed from that
+  // moment - and it's unaffected by geolocation permission/timeout issues.
   const latitude = metadata.latitude ?? gpsCoordinateToDecimal(metadata.GPSLatitude, metadata.GPSLatitudeRef);
   const longitude = metadata.longitude ?? gpsCoordinateToDecimal(metadata.GPSLongitude, metadata.GPSLongitudeRef);
-  if (browserLocation) {
-    selectedPhotoLocation = browserLocation;
-  } else if (Number.isFinite(latitude) && Number.isFinite(longitude)) {
+
+  if (Number.isFinite(latitude) && Number.isFinite(longitude)) {
     selectedPhotoLocation = {
       lat: latitude,
       lng: longitude,
-      place: `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`,
+      place: currentLanguage === 'ja' ? '撮影地点(写真情報)' : 'Photo location (from photo)',
     };
+  } else if (selectedPhotoSource === 'camera') {
+    selectedPhotoLocation = await requestPhotoLocation();
   }
 
   updateLocationStatus();
