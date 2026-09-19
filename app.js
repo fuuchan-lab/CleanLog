@@ -634,12 +634,18 @@ async function handlePhotoFile(file) {
 }
 
 function updateLocationStatus() {
-  locationStatusText.classList.remove('hidden', 'error');
+  locationStatusText.classList.remove('hidden', 'error', 'approximate');
 
   if (selectedPhotoLocation) {
-    locationStatusText.textContent = currentLanguage === 'ja'
-      ? `位置情報: ${selectedPhotoLocation.lat.toFixed(5)}, ${selectedPhotoLocation.lng.toFixed(5)}`
-      : `Location: ${selectedPhotoLocation.lat.toFixed(5)}, ${selectedPhotoLocation.lng.toFixed(5)}`;
+    const coords = `${selectedPhotoLocation.lat.toFixed(5)}, ${selectedPhotoLocation.lng.toFixed(5)}`;
+    if (selectedPhotoLocation.approximate) {
+      locationStatusText.classList.add('approximate');
+      locationStatusText.textContent = currentLanguage === 'ja'
+        ? `位置情報(推定・直近の位置を使用): ${coords}`
+        : `Location (approx., from your last known position): ${coords}`;
+    } else {
+      locationStatusText.textContent = currentLanguage === 'ja' ? `位置情報: ${coords}` : `Location: ${coords}`;
+    }
     return;
   }
 
@@ -1527,6 +1533,24 @@ function placeCurrentLocationMarker(currentLocation) {
   }
 }
 
+let lastKnownLocation = null;
+
+function rememberLocation(lat, lng) {
+  lastKnownLocation = { lat, lng, timestamp: Date.now() };
+}
+
+function getApproximateFallbackLocation() {
+  if (!lastKnownLocation || Date.now() - lastKnownLocation.timestamp > 15 * 60 * 1000) {
+    return null;
+  }
+  return {
+    lat: lastKnownLocation.lat,
+    lng: lastKnownLocation.lng,
+    place: currentLanguage === 'ja' ? '撮影地点(推定)' : 'Photo location (approximate)',
+    approximate: true,
+  };
+}
+
 function centerOnCurrentLocation() {
   if (!navigator.geolocation) {
     window.alert(currentLanguage === 'ja' ? 'この端末では位置情報を利用できません。' : 'Location is not available on this device.');
@@ -1536,6 +1560,7 @@ function centerOnCurrentLocation() {
   navigator.geolocation.getCurrentPosition(
     (position) => {
       const currentLocation = [position.coords.latitude, position.coords.longitude];
+      rememberLocation(position.coords.latitude, position.coords.longitude);
       map.setView(currentLocation, 17, { animate: true });
       placeCurrentLocationMarker(currentLocation);
     },
@@ -1554,6 +1579,7 @@ function centerMapOnCurrentLocationOnLoad() {
   navigator.geolocation.getCurrentPosition(
     (position) => {
       const currentLocation = [position.coords.latitude, position.coords.longitude];
+      rememberLocation(position.coords.latitude, position.coords.longitude);
       map.setView(currentLocation, 15, { animate: true });
       placeCurrentLocationMarker(currentLocation);
     },
@@ -1588,20 +1614,21 @@ function requestPhotoLocation() {
     lastGeolocationErrorMessage = currentLanguage === 'ja'
       ? 'この端末・ブラウザーは位置情報に対応していません。'
       : 'This device or browser does not support geolocation.';
-    return Promise.resolve(null);
+    return Promise.resolve(getApproximateFallbackLocation());
   }
 
   if (!window.isSecureContext) {
     lastGeolocationErrorMessage = currentLanguage === 'ja'
       ? '安全な接続(HTTPS)で開かれていないため、位置情報を利用できません。'
       : 'Location isn’t available because this page wasn’t opened over a secure (HTTPS) connection.';
-    return Promise.resolve(null);
+    return Promise.resolve(getApproximateFallbackLocation());
   }
 
   return new Promise((resolve) => {
     navigator.geolocation.getCurrentPosition(
       (position) => {
         lastGeolocationErrorMessage = null;
+        rememberLocation(position.coords.latitude, position.coords.longitude);
         resolve({
           lat: position.coords.latitude,
           lng: position.coords.longitude,
@@ -1610,7 +1637,11 @@ function requestPhotoLocation() {
       },
       (error) => {
         lastGeolocationErrorMessage = describeGeolocationError(error);
-        resolve(null);
+        // A fresh fix failed (denied, timed out, or unavailable) - fall back to
+        // the last fix this session actually got (from the map centering on
+        // load, the locate button, or an earlier photo) if it's still recent,
+        // rather than leaving the record with no location at all.
+        resolve(getApproximateFallbackLocation());
       },
       { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 },
     );

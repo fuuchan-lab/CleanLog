@@ -419,6 +419,10 @@ h1 {
   color: var(--danger);
 }
 
+.location-status.approximate {
+  color: var(--amber);
+}
+
 .location-status.hidden {
   display: none;
 }
