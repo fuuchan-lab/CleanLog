@@ -1654,7 +1654,13 @@ function requestPhotoLocation() {
         // rather than leaving the record with no location at all.
         resolve(getApproximateFallbackLocation());
       },
-      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 },
+      // Favor actually succeeding over precision: enableHighAccuracy forces a
+      // GPS-only fix, which can be slow or fail outright indoors/with a weak
+      // signal, and maximumAge: 0 refuses any position the browser already
+      // has cached. Allow a faster network-based fix and one up to 5 minutes
+      // old - close enough for "roughly where this was taken" - since a less
+      // precise location beats none at all.
+      { enableHighAccuracy: false, timeout: 20000, maximumAge: 5 * 60 * 1000 },
     );
   });
 }
