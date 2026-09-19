@@ -174,6 +174,7 @@ const translations = {
     detailButton: '記録詳細を見る',
     loginAlert: 'Googleアカウントでログインしました。写真とデータは Google Drive の CleanLog フォルダーに保存されます。',
     savedAlert: '写真とデータを Google Drive の CleanLog フォルダーに保存しました。',
+    privacyPolicy: 'プライバシーポリシー',
     account: 'アカウント', switchAccount: 'アカウントを切り替え', signOut: 'ログアウト',
     connecting: '接続中…',
     clientIdMissingAlert: 'Google Drive連携用のクライアントIDが未設定です。app.js の driveConfig.clientId を設定してください。',
@@ -204,6 +205,7 @@ const translations = {
     detailButton: 'View record details',
     loginAlert: 'You are now signed in with Google. Photos and data will be saved to the CleanLog folder.',
     savedAlert: 'The photo and data were saved to the CleanLog folder in Google Drive.',
+    privacyPolicy: 'Privacy policy',
     account: 'Account', switchAccount: 'Switch account', signOut: 'Sign out',
     connecting: 'Connecting…',
     clientIdMissingAlert: 'The Google Drive client ID is not configured. Please set driveConfig.clientId in app.js.',
@@ -326,6 +328,7 @@ function applyTranslations() {
   document.querySelector('#androidInstallText').textContent = t('androidGuide');
   document.querySelector('#iosInstallTitle').textContent = t('ios');
   document.querySelector('#iosInstallText').textContent = t('iosGuide');
+  document.querySelector('#privacyPolicyLink').textContent = t('privacyPolicy');
   updateInstallGuide();
   const categoryFields = categoryForm.querySelectorAll('.field > span, .color-field > span');
   categoryFields[0].textContent = t('newType');

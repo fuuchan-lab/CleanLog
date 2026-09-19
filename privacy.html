@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CleanLog プライバシーポリシー</title>
+    <link rel="icon" type="image/png" sizes="32x32" href="icons/icon-32.png" />
+    <meta name="theme-color" content="#17110e" />
+    <style>
+      :root {
+        --bg: #17110e;
+        --surface: #241914;
+        --text: #fff8f1;
+        --muted: #c2aa98;
+        --line: rgba(255, 235, 218, 0.14);
+        --accent: #e1a43a;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font-family: "Noto Sans JP", system-ui, sans-serif;
+        line-height: 1.75;
+      }
+      main {
+        width: min(100%, 720px);
+        margin: 0 auto;
+        padding: 32px 16px 56px;
+      }
+      h1 { font-size: 1.5rem; margin: 0 0 4px; }
+      h2 {
+        font-size: 1.05rem;
+        margin: 32px 0 8px;
+        padding-top: 16px;
+        border-top: 1px solid var(--line);
+      }
+      p, li { font-size: 0.95rem; }
+      ul { padding-left: 1.3em; }
+      .meta { color: var(--muted); font-size: 0.85rem; margin: 0 0 24px; }
+      .lang-section { margin-top: 56px; }
+      a { color: var(--accent); overflow-wrap: anywhere; }
+      .back { display: inline-block; margin-bottom: 20px; font-size: 0.9rem; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <a class="back" href="./">← CleanLog に戻る / Back to CleanLog</a>
+
+      <section lang="ja">
+        <h1>CleanLog プライバシーポリシー</h1>
+        <p class="meta">最終更新日:2026年9月19日</p>
+
+        <p>CleanLog(以下「本アプリ」)は、ごみ拾いの記録を写真・位置情報・地図で残すためのウェブアプリです。本アプリには運営者のサーバーがなく、記録データはすべて利用者ご自身の Google Drive と端末内に保存されます。</p>
+
+        <h2>取得する情報と利用目的</h2>
+        <ul>
+          <li><strong>写真</strong>:利用者が撮影または選択した写真を、ごみ拾いの記録として保存します。</li>
+          <li><strong>位置情報</strong>:写真に含まれる位置情報、または端末の現在位置を、記録の撮影地点として保存し、地図上に表示するために使います。現在位置は、地図の表示位置の調整にも使います。</li>
+          <li><strong>撮影日時・ごみの種類</strong>:記録の内容として保存します。</li>
+          <li><strong>Google アカウントのプロフィール(名前・プロフィール画像)</strong>:ログイン中のアカウントを画面に表示するためだけに使います。</li>
+        </ul>
+
+        <h2>Google ユーザーデータの取り扱い</h2>
+        <p>本アプリは Google アカウントでのログイン時に、次の権限のみを要求します。</p>
+        <ul>
+          <li><code>drive.file</code>:本アプリが作成したファイル(Google Drive の「CleanLog」フォルダー内の写真と記録データ)の作成・読み取り・更新・削除。利用者が本アプリ以外で作成した Drive 上のファイルにはアクセスしません。</li>
+          <li><code>userinfo.profile</code>:名前とプロフィール画像の表示。</li>
+        </ul>
+        <p>これらのデータは利用者の端末と Google の間で直接やり取りされ、本アプリの運営者を含む第三者に送信・保存・共有されることはありません。広告目的での利用、販売、AI・機械学習モデルの学習への利用も行いません。本アプリによる Google API から取得した情報の使用および他のアプリへの転送は、<a href="https://developers.google.com/terms/api-services-user-data-policy" target="_blank" rel="noopener">Google API サービスのユーザーデータに関するポリシー</a>(限定使用の要件を含む)に準拠します。</p>
+
+        <h2>端末内に保存する情報</h2>
+        <p>ログイン状態を保つための Google のアクセストークン(有効期限付き)と、言語・ごみの種類などの設定を、ブラウザーのローカルストレージに保存します。これらは端末の外には送信されません。</p>
+
+        <h2>外部サービス</h2>
+        <p>本アプリは地図の表示に OpenStreetMap、画面の表示に Google Fonts・unpkg・jsDelivr などの外部サービスを利用します。これらのサービスには、通常のウェブ閲覧と同様に IP アドレスなどの通信情報が送信されます。</p>
+
+        <h2>データの削除とアクセスの取り消し</h2>
+        <ul>
+          <li>個別の記録は、アプリ内の「削除」ボタンで Google Drive のゴミ箱に移動できます。すべての記録を消す場合は、Google Drive の「CleanLog」フォルダーを削除してください。</li>
+          <li>アプリ内の「ログアウト」で、端末に保存したアクセストークンを削除します。</li>
+          <li>本アプリへのアクセス許可は、<a href="https://myaccount.google.com/permissions" target="_blank" rel="noopener">Google アカウントのサードパーティ アクセス設定</a>からいつでも取り消せます。</li>
+        </ul>
+
+        <h2>お問い合わせ</h2>
+        <p>本ポリシーに関するお問い合わせは、<a href="https://github.com/fuuchan-lab/CleanLog/issues" target="_blank" rel="noopener">GitHub の Issues</a> からお寄せください。</p>
+
+        <h2>改定</h2>
+        <p>本ポリシーを変更する場合は、このページで告知し、最終更新日を更新します。</p>
+      </section>
+
+      <section class="lang-section" lang="en">
+        <h1>CleanLog Privacy Policy</h1>
+        <p class="meta">Last updated: September 19, 2026</p>
+
+        <p>CleanLog ("the app") is a web app for recording litter pick-ups with photos, locations and a map. The app has no server of its own: all record data is stored in the user's own Google Drive and on the user's device.</p>
+
+        <h2>Information collected and how it is used</h2>
+        <ul>
+          <li><strong>Photos</strong> the user takes or selects are saved as litter pick-up records.</li>
+          <li><strong>Location</strong>, taken from the photo or from the device's current position, is saved as the record's location and shown on the map. The current position is also used to center the map.</li>
+          <li><strong>Capture date/time and litter type</strong> are saved as part of the record.</li>
+          <li><strong>Google profile (name and profile picture)</strong> is used only to show which account is signed in.</li>
+        </ul>
+
+        <h2>Use of Google user data</h2>
+        <p>When the user signs in with Google, the app requests only these permissions:</p>
+        <ul>
+          <li><code>drive.file</code>: create, read, update and delete the files the app itself creates (the photos and record data in the "CleanLog" folder in Google Drive). The app cannot access any other files in the user's Drive.</li>
+          <li><code>userinfo.profile</code>: show the user's name and profile picture.</li>
+        </ul>
+        <p>This data travels directly between the user's device and Google. It is never sent to, stored by, or shared with the app's developer or any other third party. It is not used for advertising, sold, or used to train AI or machine-learning models. The app's use and transfer of information received from Google APIs adheres to the <a href="https://developers.google.com/terms/api-services-user-data-policy" target="_blank" rel="noopener">Google API Services User Data Policy</a>, including the Limited Use requirements.</p>
+
+        <h2>Information stored on the device</h2>
+        <p>A time-limited Google access token (to keep the user signed in) and settings such as language and litter types are stored in the browser's local storage. They are never sent off the device.</p>
+
+        <h2>Third-party services</h2>
+        <p>The app uses OpenStreetMap for map tiles, and Google Fonts, unpkg and jsDelivr for page resources. As with any web browsing, these services receive connection information such as the user's IP address.</p>
+
+        <h2>Deleting data and revoking access</h2>
+        <ul>
+          <li>Individual records can be moved to the Google Drive trash with the app's "Delete" button. To remove all records, delete the "CleanLog" folder in Google Drive.</li>
+          <li>"Sign out" in the app removes the access token stored on the device.</li>
+          <li>The app's access can be revoked at any time from <a href="https://myaccount.google.com/permissions" target="_blank" rel="noopener">your Google Account's third-party access settings</a>.</li>
+        </ul>
+
+        <h2>Contact</h2>
+        <p>Questions about this policy can be submitted via <a href="https://github.com/fuuchan-lab/CleanLog/issues" target="_blank" rel="noopener">GitHub Issues</a>.</p>
+
+        <h2>Changes</h2>
+        <p>Any changes to this policy will be posted on this page with an updated date.</p>
+      </section>
+    </main>
+  </body>
+</html>

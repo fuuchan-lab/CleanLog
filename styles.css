@@ -622,6 +622,16 @@ h1 {
   margin: 4px 0 0;
 }
 
+.privacy-link-row {
+  margin: 16px 0 0;
+  text-align: center;
+}
+
+.privacy-link {
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
 .settings-section h4 {
   margin: 0;
   font-size: 0.95rem;
