@@ -653,8 +653,23 @@ function updateLocationStatus() {
 }
 
 function handlePhotoSelected() {
-  const file = selectedPhotoFile || (photoInput.files && photoInput.files[0]);
-  handlePhotoFile(file);
+  const file = photoInput.files && photoInput.files[0];
+  if (!file) return;
+
+  // Many mobile browsers strip GPS EXIF from the blob handed back by a live
+  // camera capture, even though the same photo saved normally to the album
+  // keeps it. Show what was just captured as an immediate preview, then send
+  // the user straight into the album picker to pick that same photo - the
+  // copy handlePhotoFile() actually reads metadata from is the album one.
+  photoPreview.src = URL.createObjectURL(file);
+  photoPreview.classList.remove('hidden');
+  locationStatusText.classList.remove('hidden', 'error', 'approximate');
+  locationStatusText.textContent = currentLanguage === 'ja'
+    ? '位置情報を正しく記録するため、今撮影した写真をアルバムから選択してください。'
+    : 'To record its location correctly, please select the photo you just took from your album.';
+
+  albumInput.value = '';
+  albumInput.click();
 }
 
 function handleAlbumSelected() {
@@ -692,6 +707,7 @@ async function openRecordModal(source = 'camera') {
     albumInput.value = '';
     albumInput.click();
   } else {
+    photoInput.value = '';
     photoInput.click();
   }
 }
@@ -1045,7 +1061,7 @@ async function saveRecordToDrive(event) {
     return;
   }
 
-  const file = selectedPhotoFile || (photoInput.files && photoInput.files[0]);
+  const file = selectedPhotoFile;
   const category = recordCategoryInput.value || 'unclassified';
   const categoryInfo = categoryMap[category] || categoryMap.unclassified;
   const title = getCategoryLabel(categoryInfo);
