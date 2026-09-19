@@ -80,6 +80,8 @@ const detailCategoryInput = document.getElementById('detailCategoryInput');
 const detailDateTimeInput = document.getElementById('detailDateTimeInput');
 const updateDetailButton = document.getElementById('updateDetailButton');
 const cancelDetailEditButton = document.getElementById('cancelDetailEditButton');
+const useCurrentLocationForDetailButton = document.getElementById('useCurrentLocationForDetailButton');
+const detailLocationStatusText = document.getElementById('detailLocationStatusText');
 const addRecordButton = document.getElementById('addRecordButton');
 const addRecordLabel = document.getElementById('addRecordLabel');
 const locateButton = document.getElementById('locateButton');
@@ -146,6 +148,7 @@ let selectedPhotoFile = null;
 let selectedPhotoLocation = null;
 let selectedPhotoSource = 'camera';
 let activeDetailRecord = null;
+let pendingDetailLocation = null;
 
 const dateRange = {
   start: '',
@@ -166,7 +169,7 @@ const translations = {
     installTitle: 'デバイスへのインストール方法', installDescription: '下のQRコードをスマートフォンで読み取ってアクセスしてください。',
     android: 'Android', androidGuide: 'Chromeでアクセスし、メニューから「ホーム画面に追加」または「アプリをインストール」を選択してください。',
     ios: 'iPhone / iPad', iosGuide: 'Safariでアクセスし、共有ボタンから「ホーム画面に追加」を選択してください。', qrAlt: 'アクセス先のQRコード',
-    previousMonth: '前の月', nextMonth: '次の月', update: '更新', delete: '削除', edit: '編集', cancel: 'キャンセル',
+    previousMonth: '前の月', nextMonth: '次の月', update: '更新', delete: '削除', edit: '編集', cancel: 'キャンセル', useCurrentLocation: '現在位置を記録',
     detailButton: '記録詳細を見る',
     loginAlert: 'Googleアカウントでログインしました。写真とデータは Google Drive の CleanLog フォルダーに保存されます。',
     savedAlert: '写真とデータを Google Drive の CleanLog フォルダーに保存しました。',
@@ -196,7 +199,7 @@ const translations = {
     installTitle: 'How to install on your device', installDescription: 'Scan the QR code below with your smartphone to open CleanLog.',
     android: 'Android', androidGuide: 'Open this page in Chrome, then choose “Add to Home screen” or “Install app” from the menu.',
     ios: 'iPhone / iPad', iosGuide: 'Open this page in Safari, tap the Share button, then choose “Add to Home Screen”.', qrAlt: 'QR code for this app',
-    previousMonth: 'Previous month', nextMonth: 'Next month', update: 'Update', delete: 'Delete', edit: 'Edit', cancel: 'Cancel',
+    previousMonth: 'Previous month', nextMonth: 'Next month', update: 'Update', delete: 'Delete', edit: 'Edit', cancel: 'Cancel', useCurrentLocation: 'Record current location',
     detailButton: 'View record details',
     loginAlert: 'You are now signed in with Google. Photos and data will be saved to the CleanLog folder.',
     savedAlert: 'The photo and data were saved to the CleanLog folder in Google Drive.',
@@ -291,6 +294,7 @@ function applyTranslations() {
   document.querySelector('#detailDateTimeLabel').textContent = t('capturedAt');
   updateDetailButton.textContent = t('update');
   cancelDetailEditButton.textContent = t('cancel');
+  useCurrentLocationForDetailButton.textContent = t('useCurrentLocation');
   updateDetailCategoryOptions();
   document.querySelector('#recordModalTitle').textContent = t('newRecord');
   closeRecordModal.setAttribute('aria-label', t('close'));
@@ -1214,11 +1218,34 @@ function startDetailEdit() {
   updateDetailCategoryOptions();
   detailCategoryInput.value = activeDetailRecord.category;
   detailDateTimeInput.value = getDetailDateTimeValue(activeDetailRecord);
+  pendingDetailLocation = null;
+  detailLocationStatusText.classList.add('hidden');
+  detailLocationStatusText.textContent = '';
   detailEditForm.classList.remove('hidden');
 }
 
 function cancelDetailEdit() {
   detailEditForm.classList.add('hidden');
+}
+
+async function handleUseCurrentLocationForDetail() {
+  useCurrentLocationForDetailButton.disabled = true;
+  detailLocationStatusText.classList.remove('hidden', 'error', 'approximate');
+  detailLocationStatusText.textContent = currentLanguage === 'ja' ? '現在地を取得中…' : 'Getting current location…';
+
+  const location = await requestPhotoLocation();
+
+  useCurrentLocationForDetailButton.disabled = false;
+
+  if (location) {
+    pendingDetailLocation = location;
+    const coords = `${location.lat.toFixed(5)}, ${location.lng.toFixed(5)}`;
+    detailLocationStatusText.textContent = currentLanguage === 'ja' ? `位置情報: ${coords}` : `Location: ${coords}`;
+  } else {
+    detailLocationStatusText.classList.add('error');
+    detailLocationStatusText.textContent = lastGeolocationErrorMessage
+      || (currentLanguage === 'ja' ? '現在地を取得できませんでした。' : 'Could not get your current location.');
+  }
 }
 
 async function updateDetailRecord() {
@@ -1230,6 +1257,13 @@ async function updateDetailRecord() {
   activeDetailRecord.title = getCategoryLabel(categoryMap[nextCategory]);
   activeDetailRecord.date = date.replace(/-/g, '/');
   activeDetailRecord.time = time || '12:00';
+
+  if (pendingDetailLocation) {
+    activeDetailRecord.lat = pendingDetailLocation.lat;
+    activeDetailRecord.lng = pendingDetailLocation.lng;
+    activeDetailRecord.place = pendingDetailLocation.place;
+    pendingDetailLocation = null;
+  }
 
   if (isGoogleLoggedIn && activeDetailRecord.dataFileId) {
     try {
@@ -1280,6 +1314,7 @@ editDetailButton.addEventListener('click', startDetailEdit);
 deleteDetailButton.addEventListener('click', deleteDetailRecord);
 updateDetailButton.addEventListener('click', updateDetailRecord);
 cancelDetailEditButton.addEventListener('click', cancelDetailEdit);
+useCurrentLocationForDetailButton.addEventListener('click', handleUseCurrentLocationForDetail);
 
 document.addEventListener('keydown', (event) => {
   if (event.key === 'Escape') {

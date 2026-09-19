@@ -983,6 +983,11 @@ h1 {
   border-top: 1px solid var(--line);
 }
 
+.detail-edit-form > .secondary-button {
+  width: 100%;
+  margin-top: 4px;
+}
+
 .detail-edit-form.hidden {
   display: none;
 }
