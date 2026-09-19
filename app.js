@@ -613,6 +613,19 @@ async function readPhotoMetadata(file) {
   }
 }
 
+function getPhotoExifLocation(metadata) {
+  const latitude = metadata.latitude ?? gpsCoordinateToDecimal(metadata.GPSLatitude, metadata.GPSLatitudeRef);
+  const longitude = metadata.longitude ?? gpsCoordinateToDecimal(metadata.GPSLongitude, metadata.GPSLongitudeRef);
+
+  if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return null;
+
+  return {
+    lat: latitude,
+    lng: longitude,
+    place: currentLanguage === 'ja' ? '撮影地点(写真情報)' : 'Photo location (from photo)',
+  };
+}
+
 async function handlePhotoFile(file) {
   if (!file) return;
 
@@ -620,46 +633,44 @@ async function handlePhotoFile(file) {
   selectedPhotoLocation = null;
   photoPreview.src = URL.createObjectURL(file);
   photoPreview.classList.remove('hidden');
+  recordCategoryInput.value = classifyPhoto(file);
+
   const metadata = await readPhotoMetadata(file);
   const capturedDate = parseExifDate(metadata.DateTimeOriginal || metadata.CreateDate || metadata.ModifyDate);
   recordDateTimeInput.value = toDateTimeLocalValue(capturedDate || new Date(file.lastModified || Date.now()));
 
-  // For an album-sourced photo, the file's own GPS EXIF (from whatever
-  // camera app actually took it) is the only location signal available.
-  // For a camera-sourced one, record the device's current position right
-  // away: the fix the map already got on launch if it's fresh, otherwise a
-  // live request (relaxed settings - network positioning and a recently
-  // cached position are accepted, since the strict GPS-only request was
-  // what kept failing right after the camera app handed control back).
-  // The manual button stays available as a retry, and save time is a
-  // further fallback if it's still missing.
-  if (selectedPhotoSource !== 'camera') {
-    const latitude = metadata.latitude ?? gpsCoordinateToDecimal(metadata.GPSLatitude, metadata.GPSLatitudeRef);
-    const longitude = metadata.longitude ?? gpsCoordinateToDecimal(metadata.GPSLongitude, metadata.GPSLongitudeRef);
+  // Location, in order of how well each source matches where the photo was
+  // actually taken:
+  //
+  // 1. The photo's own GPS EXIF. Read for every photo now, including camera
+  //    captures - some devices do geotag them, and when they do it is the
+  //    only source tied to the photo itself rather than to "wherever the
+  //    phone is at this moment".
+  // 2. For a camera capture with no EXIF GPS (the common case: the in-browser
+  //    camera hands back a bare image), the device's current position, taken
+  //    right now while the phone is still at the spot. Uses the fix the map
+  //    already got on launch if it is fresh, otherwise a live request with
+  //    relaxed settings - a network-based or recently cached position is
+  //    accepted, because the strict GPS-only request was what kept failing in
+  //    the moment right after the camera handed control back.
+  //    An album photo deliberately skips this: it may have been taken
+  //    somewhere else entirely, so guessing "here, now" would be wrong.
+  // 3. Failing both, the manual button, which stays visible so the location
+  //    can be added (or corrected) by hand. Save time retries once more.
+  selectedPhotoLocation = getPhotoExifLocation(metadata);
 
-    if (Number.isFinite(latitude) && Number.isFinite(longitude)) {
-      selectedPhotoLocation = {
-        lat: latitude,
-        lng: longitude,
-        place: currentLanguage === 'ja' ? '撮影地点(写真情報)' : 'Photo location (from photo)',
-      };
-    }
-    updateLocationStatus();
-  } else {
-    useCurrentLocationForRecordButton.classList.remove('hidden');
+  if (!selectedPhotoLocation && selectedPhotoSource === 'camera') {
     locationStatusText.classList.remove('hidden', 'error', 'approximate');
     locationStatusText.textContent = currentLanguage === 'ja' ? '現在地を取得中…' : 'Getting current location…';
-    recordCategoryInput.value = classifyPhoto(file);
 
     if (initialLocationPromise) {
       await initialLocationPromise;
     }
     selectedPhotoLocation = getApproximateFallbackLocation(2 * 60 * 1000) || await requestPhotoLocation();
-    updateLocationStatus();
-    return;
   }
 
-  recordCategoryInput.value = classifyPhoto(file);
+  useCurrentLocationForRecordButton.classList.remove('hidden');
+  updateLocationStatus();
 }
 
 async function handleUseCurrentLocationForRecord() {
@@ -695,7 +706,9 @@ function updateLocationStatus() {
 
   locationStatusText.classList.add('error');
   locationStatusText.textContent = lastGeolocationErrorMessage
-    || (currentLanguage === 'ja' ? '写真から位置情報を取得できませんでした。' : 'Could not get a location from this photo.');
+    || (currentLanguage === 'ja'
+      ? '位置情報がありません。「現在位置を記録」ボタンで追加できます。'
+      : 'No location yet. Use the “Record current location” button to add one.');
 }
 
 function handlePhotoSelected() {
