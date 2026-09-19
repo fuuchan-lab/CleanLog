@@ -215,25 +215,34 @@ h1 {
   position: absolute;
   left: 18px;
   top: 18px;
-  width: 42px;
-  height: 42px;
+  width: 46px;
+  height: 46px;
   border: 1px solid rgba(255, 235, 218, 0.2);
   border-radius: 50%;
   background: rgba(36, 25, 20, 0.94);
   color: #fff8f1;
-  font-size: 1.45rem;
   line-height: 1;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 1px;
   padding: 0;
   box-shadow: 0 10px 20px rgba(0, 0, 0, 0.32);
   z-index: 500;
 }
 
-.fab span {
+.fab-label {
+  font-size: 7.5px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.fab-icon {
   display: block;
-  font-size: 1.2rem;
+  font-size: 1.05rem;
   line-height: 1;
 }
 
@@ -766,6 +775,19 @@ h1 {
   display: flex;
   flex-direction: column;
   gap: 12px;
+}
+
+.account-email {
+  margin: 0 0 16px;
+  color: var(--muted);
+  font-size: 0.82rem;
+  overflow-wrap: anywhere;
+}
+
+.account-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .field {

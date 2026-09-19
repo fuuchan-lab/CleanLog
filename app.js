@@ -82,6 +82,7 @@ const detailDateTimeInput = document.getElementById('detailDateTimeInput');
 const updateDetailButton = document.getElementById('updateDetailButton');
 const cancelDetailEditButton = document.getElementById('cancelDetailEditButton');
 const addRecordButton = document.getElementById('addRecordButton');
+const addRecordLabel = document.getElementById('addRecordLabel');
 const locateButton = document.getElementById('locateButton');
 const albumButton = document.getElementById('albumButton');
 const albumInput = document.getElementById('albumInput');
@@ -106,6 +107,11 @@ const googleLoginButton = document.getElementById('googleLoginButton');
 const googleLoginText = document.getElementById('googleLoginText');
 const googleMark = document.querySelector('.google-mark');
 const googleMarkInner = document.querySelector('.google-mark-inner');
+const accountModal = document.getElementById('accountModal');
+const closeAccountModal = document.getElementById('closeAccountModal');
+const accountModalEmail = document.getElementById('accountModalEmail');
+const switchAccountButton = document.getElementById('switchAccountButton');
+const signOutButton = document.getElementById('signOutButton');
 const languageSelect = document.getElementById('languageSelect');
 const dateRangeButton = document.getElementById('dateRangeButton');
 const dateRangeValue = document.getElementById('dateRangeValue');
@@ -132,6 +138,7 @@ let driveAccessToken = null;
 let driveFolderId = null;
 let driveTokenClient = null;
 let driveUserAvatarUrl = null;
+let driveUserEmail = null;
 const driveImageUrlCache = new Map();
 let activeCategoryKeys = [...categories.map((category) => category.key), 'unclassified'];
 let currentLanguage = localStorage.getItem('cleanlog-language') || (navigator.language.toLowerCase().startsWith('ja') ? 'ja' : 'en');
@@ -149,7 +156,7 @@ const translations = {
   ja: {
     appTagline: 'ゴミ拾い記録帳', settings: '設定', login: 'ログイン', connected: 'Google接続中',
     recordPeriod: '記録期間', periodCount: '期間/地図中の数', density: 'ごみ密度 (個/km²)',
-    map: 'ごみ分布マップ', addRecord: '新しい記録を追加', categories: 'ごみの種類', all: '全て表示',
+    map: 'ごみ分布マップ', addRecord: '新しい記録を追加', capture: '撮影', categories: 'ごみの種類', all: '全て表示',
     recent: '最近の記録', periodFilter: '期間指定', details: '記録詳細', close: '閉じる',
     recordTitle: '記録タイトル', place: '場所', notes: '写真と位置情報を元に、ゴミの状態と種類を記録しています。',
     newRecord: '新しいごみ記録', selectType: '種類を選択', type: '種類', capturedAt: '撮影日時', photo: '写真',
@@ -160,10 +167,11 @@ const translations = {
     android: 'Android', androidGuide: 'Chromeでアクセスし、メニューから「ホーム画面に追加」または「アプリをインストール」を選択してください。',
     ios: 'iPhone / iPad', iosGuide: 'Safariでアクセスし、共有ボタンから「ホーム画面に追加」を選択してください。', qrAlt: 'アクセス先のQRコード',
     previousMonth: '前の月', nextMonth: '次の月', save: '保存', update: '更新', delete: '削除', edit: '編集', cancel: 'キャンセル',
-    detailButton: '記録詳細を見る', loginConnectedAlert: 'Google Drive に接続済みです。写真とデータは CleanLog フォルダーへ保存されます。',
+    detailButton: '記録詳細を見る',
     loginAlert: 'Googleアカウントでログインしました。写真とデータは Google Drive の CleanLog フォルダーに保存されます。',
     savedAlert: '写真とデータを Google Drive の CleanLog フォルダーに保存しました。',
     deleteSavedAlert: '保存済みの記録とアイコンは残したまま、種類を一覧から削除しました。',
+    account: 'アカウント', switchAccount: 'アカウントを切り替え', signOut: 'ログアウト',
     connecting: '接続中…',
     clientIdMissingAlert: 'Google Drive連携用のクライアントIDが未設定です。app.js の driveConfig.clientId を設定してください。',
     loginFailedAlert: 'Googleへのログインに失敗しました。もう一度お試しください。',
@@ -179,7 +187,7 @@ const translations = {
   en: {
     appTagline: 'Clean-up Logbook', settings: 'Settings', login: 'Log in', connected: 'Google connected',
     recordPeriod: 'Record period', periodCount: 'Records in period & map view', density: 'Waste density (items/km²)',
-    map: 'Waste distribution map', addRecord: 'Add new record', categories: 'Waste types', all: 'Show all',
+    map: 'Waste distribution map', addRecord: 'Add new record', capture: 'Capture', categories: 'Waste types', all: 'Show all',
     recent: 'Recent records', periodFilter: 'Filter by period', details: 'Record details', close: 'Close',
     recordTitle: 'Record title', place: 'Place', notes: 'The waste condition and type are recorded from the photo and location.',
     newRecord: 'New waste record', selectType: 'Select type', type: 'Type', capturedAt: 'Captured at', photo: 'Photo',
@@ -190,10 +198,11 @@ const translations = {
     android: 'Android', androidGuide: 'Open this page in Chrome, then choose “Add to Home screen” or “Install app” from the menu.',
     ios: 'iPhone / iPad', iosGuide: 'Open this page in Safari, tap the Share button, then choose “Add to Home Screen”.', qrAlt: 'QR code for this app',
     previousMonth: 'Previous month', nextMonth: 'Next month', save: 'Save', update: 'Update', delete: 'Delete', edit: 'Edit', cancel: 'Cancel',
-    detailButton: 'View record details', loginConnectedAlert: 'Google Drive is connected. Photos and data will be saved to the CleanLog folder.',
+    detailButton: 'View record details',
     loginAlert: 'You are now signed in with Google. Photos and data will be saved to the CleanLog folder.',
     savedAlert: 'The photo and data were saved to the CleanLog folder in Google Drive.',
     deleteSavedAlert: 'The saved record and its map icon remain, while this type was removed from the list.',
+    account: 'Account', switchAccount: 'Switch account', signOut: 'Sign out',
     connecting: 'Connecting…',
     clientIdMissingAlert: 'The Google Drive client ID is not configured. Please set driveConfig.clientId in app.js.',
     loginFailedAlert: 'Failed to sign in with Google. Please try again.',
@@ -248,6 +257,7 @@ function applyTranslations() {
   document.querySelectorAll('.summary-item .label')[2].textContent = t('density');
   document.querySelector('.map-panel #map').setAttribute('aria-label', t('map'));
   addRecordButton.setAttribute('aria-label', t('addRecord'));
+  addRecordLabel.textContent = t('capture');
   locateButton.setAttribute('aria-label', currentLanguage === 'ja' ? '現在地を表示' : 'Show current location');
   locateButton.title = currentLanguage === 'ja' ? '現在地を表示' : 'Show current location';
   albumButton.setAttribute('aria-label', currentLanguage === 'ja' ? 'アルバムから写真を選択' : 'Choose a photo from album');
@@ -256,6 +266,10 @@ function applyTranslations() {
   settingsButton.title = t('settings');
   dateRangeButton.setAttribute('aria-label', t('selectPeriod'));
   googleLoginText.textContent = isGoogleLoggedIn ? t('connected') : t('login');
+  document.querySelector('#accountModalTitle').textContent = t('account');
+  closeAccountModal.setAttribute('aria-label', t('close'));
+  switchAccountButton.textContent = t('switchAccount');
+  signOutButton.textContent = t('signOut');
   document.querySelector('.list-panel h2').textContent = t('recent');
   document.querySelector('.list-panel .text-button').textContent = t('periodFilter');
   document.querySelector('#detailSheet').setAttribute('aria-label', t('details'));
@@ -702,8 +716,10 @@ async function fetchDriveUserAvatar() {
     const response = await driveFetch('https://www.googleapis.com/oauth2/v2/userinfo');
     const data = await response.json();
     driveUserAvatarUrl = data.picture || null;
+    driveUserEmail = data.email || null;
   } catch (error) {
     driveUserAvatarUrl = null;
+    driveUserEmail = null;
   }
 }
 
@@ -742,7 +758,7 @@ function clearStoredDriveAccessToken() {
   localStorage.removeItem(DRIVE_TOKEN_KEY);
 }
 
-function getDriveAccessToken(interactive = true) {
+function getDriveAccessToken(interactive = true, promptOverride = null) {
   return new Promise((resolve, reject) => {
     if (!window.google || !google.accounts || !google.accounts.oauth2) {
       reject(new Error('google-identity-not-loaded'));
@@ -768,7 +784,7 @@ function getDriveAccessToken(interactive = true) {
     };
 
     driveTokenClient.requestAccessToken({
-      prompt: interactive && !driveAccessToken ? 'consent' : '',
+      prompt: promptOverride ?? (interactive && !driveAccessToken ? 'consent' : ''),
     });
   });
 }
@@ -908,35 +924,88 @@ async function loadRecordsFromDrive() {
 
 const DRIVE_SESSION_KEY = 'cleanlog-drive-connected';
 
-async function handleGoogleLogin() {
-  if (isGoogleLoggedIn) {
-    window.alert(t('loginConnectedAlert'));
-    return;
-  }
-
+async function connectToDrive(promptOverride = null) {
   if (!isDriveConfigured()) {
     window.alert(t('clientIdMissingAlert'));
-    return;
+    return false;
   }
 
   googleLoginText.textContent = t('connecting');
 
   try {
-    await getDriveAccessToken();
+    await getDriveAccessToken(true, promptOverride);
     driveFolderId = await ensureDriveFolder();
     isGoogleLoggedIn = true;
     localStorage.setItem(DRIVE_SESSION_KEY, '1');
     await fetchDriveUserAvatar();
     updateLoginState();
-    window.alert(t('loginAlert'));
     await loadRecordsFromDrive();
+    return true;
   } catch (error) {
     isGoogleLoggedIn = false;
     localStorage.removeItem(DRIVE_SESSION_KEY);
     clearStoredDriveAccessToken();
     updateLoginState();
     window.alert(t('loginFailedAlert'));
+    return false;
   }
+}
+
+async function handleGoogleLogin() {
+  if (isGoogleLoggedIn) {
+    openAccountModal();
+    return;
+  }
+
+  if (await connectToDrive()) {
+    window.alert(t('loginAlert'));
+  }
+}
+
+async function signOutOfDrive() {
+  const tokenToRevoke = driveAccessToken;
+
+  isGoogleLoggedIn = false;
+  driveAccessToken = null;
+  driveFolderId = null;
+  driveUserAvatarUrl = null;
+  driveUserEmail = null;
+  driveImageUrlCache.clear();
+  localStorage.removeItem(DRIVE_SESSION_KEY);
+  clearStoredDriveAccessToken();
+  updateLoginState();
+
+  records.length = 0;
+  setDefaultDateRange();
+  renderRecords();
+  renderMarkers(activeCategoryKeys);
+  renderDateRangeSummary();
+
+  if (tokenToRevoke && window.google?.accounts?.oauth2?.revoke) {
+    google.accounts.oauth2.revoke(tokenToRevoke, () => {});
+  }
+}
+
+async function handleSignOut() {
+  closeAccountModalView();
+  await signOutOfDrive();
+}
+
+async function handleSwitchAccount() {
+  closeAccountModalView();
+  await signOutOfDrive();
+  if (await connectToDrive('select_account')) {
+    window.alert(t('loginAlert'));
+  }
+}
+
+function openAccountModal() {
+  accountModalEmail.textContent = driveUserEmail || '';
+  accountModal.classList.remove('hidden');
+}
+
+function closeAccountModalView() {
+  accountModal.classList.add('hidden');
 }
 
 async function restoreDriveSession() {
@@ -1054,6 +1123,14 @@ settingsModal.addEventListener('click', (event) => {
   }
 });
 categoryForm.addEventListener('submit', addCategory);
+closeAccountModal.addEventListener('click', closeAccountModalView);
+accountModal.addEventListener('click', (event) => {
+  if (event.target === accountModal) {
+    closeAccountModalView();
+  }
+});
+switchAccountButton.addEventListener('click', handleSwitchAccount);
+signOutButton.addEventListener('click', handleSignOut);
 dateRangeButton.addEventListener('click', openDateRangeModal);
 closeDateRangeModal.addEventListener('click', closeDateRangeModalView);
 dateRangeModal.addEventListener('click', (event) => {

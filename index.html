@@ -59,7 +59,8 @@
       <section class="map-panel">
         <div id="map" aria-label="ごみ分布マップ"></div>
         <button id="addRecordButton" class="fab" type="button" aria-label="新しい記録を追加" title="新しい記録を追加">
-          <span aria-hidden="true">📷</span>
+          <span id="addRecordLabel" class="fab-label" aria-hidden="true">撮影</span>
+          <span class="fab-icon" aria-hidden="true">📷</span>
         </button>
         <button id="locateButton" class="locate-button" type="button" aria-label="現在地を表示" title="現在地を表示">
           <span aria-hidden="true">⌾</span>
@@ -157,6 +158,22 @@
 
           <button id="saveRecordButton" type="submit" class="primary-button">Drive に保存</button>
         </form>
+      </div>
+    </div>
+
+    <div id="accountModal" class="record-modal hidden" aria-modal="true" role="dialog" aria-labelledby="accountModalTitle">
+      <div class="record-modal-card">
+        <div class="record-modal-header">
+          <h3 id="accountModalTitle">アカウント</h3>
+          <button id="closeAccountModal" type="button" class="close-detail" aria-label="閉じる">×</button>
+        </div>
+
+        <p id="accountModalEmail" class="account-email"></p>
+
+        <div class="account-actions">
+          <button id="switchAccountButton" type="button" class="secondary-button">アカウントを切り替え</button>
+          <button id="signOutButton" type="button" class="danger-button">ログアウト</button>
+        </div>
       </div>
     </div>
 
