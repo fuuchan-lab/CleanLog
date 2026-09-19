@@ -723,7 +723,11 @@ async function openRecordModal(source = 'camera') {
   photoPreview.classList.add('hidden');
   locationStatusText.classList.add('hidden');
   locationStatusText.textContent = '';
-  useCurrentLocationForRecordButton.classList.add('hidden');
+  // Show this immediately for a camera capture rather than waiting for
+  // handlePhotoFile() to finish processing the photo - it doesn't depend on
+  // the photo at all, and this way it's available even if that processing
+  // is slow or something about it doesn't go as expected on a given phone.
+  useCurrentLocationForRecordButton.classList.toggle('hidden', source !== 'camera');
   selectedPhotoFile = null;
   selectedPhotoLocation = null;
   selectedPhotoSource = source;

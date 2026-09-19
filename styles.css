@@ -1002,9 +1002,14 @@ h1 {
 }
 
 .datetime-location-button {
-  flex: 1 1 auto;
+  /* flex-shrink: 0 so this never gets squeezed narrower than its own text -
+     with shrinking allowed, it could render thinner than "現在位置を記録"
+     needs, and the overflowing (nowrap) text would visually spill over the
+     datetime field next to it. Wrap to its own line instead when there's
+     not enough room, rather than shrinking below its content. */
+  flex: 0 0 auto;
   white-space: nowrap;
-  padding: 10px 10px;
+  padding: 10px 12px;
   font-size: 0.72rem;
 }
 
