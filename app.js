@@ -138,7 +138,6 @@ let currentLanguage = localStorage.getItem('cleanlog-language') || (navigator.la
 let selectedPhotoFile = null;
 let selectedPhotoLocation = null;
 let selectedPhotoSource = 'camera';
-let pendingPhotoLocation = null;
 let activeDetailRecord = null;
 
 const dateRange = {
@@ -169,6 +168,7 @@ const translations = {
     clientIdMissingAlert: 'Google Drive連携用のクライアントIDが未設定です。app.js の driveConfig.clientId を設定してください。',
     loginFailedAlert: 'Googleへのログインに失敗しました。もう一度お試しください。',
     signInFirstAlert: '先にGoogleでログインしてください。',
+    signInBeforeCaptureAlert: '記録を撮る前に、Googleでログインしてください。続けてログイン画面を開きます。ログイン後、もう一度ボタンを押してください。',
     saveFailedAlert: 'Google Driveへの保存に失敗しました。もう一度お試しください。',
     savingToDrive: '保存中…',
     updateFailedAlert: 'Google Driveへの更新の反映に失敗しました。',
@@ -198,6 +198,7 @@ const translations = {
     clientIdMissingAlert: 'The Google Drive client ID is not configured. Please set driveConfig.clientId in app.js.',
     loginFailedAlert: 'Failed to sign in with Google. Please try again.',
     signInFirstAlert: 'Please sign in with Google first.',
+    signInBeforeCaptureAlert: 'Please sign in with Google before taking a record. We’ll open the sign-in screen now — press the button again once you’re signed in.',
     saveFailedAlert: 'Failed to save to Google Drive. Please try again.',
     savingToDrive: 'Saving…',
     updateFailedAlert: 'Failed to sync the update to Google Drive.',
@@ -596,13 +597,11 @@ async function handlePhotoFile(file) {
 
   let browserLocation = null;
   if (selectedPhotoSource === 'camera') {
-    // Request a fresh fix now, right as the photo comes back from the camera app,
-    // since it's much closer to the moment of capture than the fix requested when
-    // the camera button was first pressed (the user may have moved in between).
+    // Request the fix now, right as the photo comes back from the camera app -
+    // a single request here, rather than racing it against one fired the
+    // instant the camera button was pressed, avoids two concurrent
+    // getCurrentPosition() calls interfering with each other.
     browserLocation = await requestPhotoLocation();
-    if (!browserLocation && pendingPhotoLocation) {
-      browserLocation = await pendingPhotoLocation;
-    }
   }
   const latitude = metadata.latitude ?? gpsCoordinateToDecimal(metadata.GPSLatitude, metadata.GPSLatitudeRef);
   const longitude = metadata.longitude ?? gpsCoordinateToDecimal(metadata.GPSLongitude, metadata.GPSLongitudeRef);
@@ -648,7 +647,19 @@ function handleAlbumSelected() {
   }
 }
 
-function openRecordModal(source = 'camera') {
+async function openRecordModal(source = 'camera') {
+  await driveSessionReadyPromise;
+
+  if (!isGoogleLoggedIn) {
+    if (!isDriveConfigured()) {
+      window.alert(t('clientIdMissingAlert'));
+      return;
+    }
+    window.alert(t('signInBeforeCaptureAlert'));
+    handleGoogleLogin();
+    return;
+  }
+
   recordModal.classList.remove('hidden');
   recordForm.reset();
   photoPreview.removeAttribute('src');
@@ -658,7 +669,6 @@ function openRecordModal(source = 'camera') {
   selectedPhotoFile = null;
   selectedPhotoLocation = null;
   selectedPhotoSource = source;
-  pendingPhotoLocation = source === 'camera' ? requestPhotoLocation() : null;
   recordCategoryInput.value = '';
   if (source === 'album') {
     albumInput.value = '';
@@ -960,10 +970,6 @@ async function saveRecordToDrive(event) {
   if (!isGoogleLoggedIn) {
     window.alert(t('signInFirstAlert'));
     return;
-  }
-
-  if (selectedPhotoSource === 'camera' && pendingPhotoLocation && !selectedPhotoLocation) {
-    selectedPhotoLocation = await pendingPhotoLocation;
   }
 
   const file = selectedPhotoFile || (photoInput.files && photoInput.files[0]);
@@ -1557,6 +1563,6 @@ window.map = map;
 // Let Drive records finish loading (and fitting the map to them) first, so
 // the current-location center requested on top of that always has the
 // final say on where the map ends up.
-restoreDriveSession().finally(() => {
+const driveSessionReadyPromise = restoreDriveSession().finally(() => {
   centerMapOnCurrentLocationOnLoad();
 });
