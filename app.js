@@ -626,12 +626,13 @@ async function handlePhotoFile(file) {
 
   // For an album-sourced photo, the file's own GPS EXIF (from whatever
   // camera app actually took it) is the only location signal available.
-  // For a camera-sourced one, skip EXIF/live lookups here entirely - a
-  // geolocation request made right as the page regains focus from the
-  // camera app has proven unreliable on several phones. Show the manual
-  // "現在位置を記録" button instead (confirmed reliable when tapped as its
-  // own, isolated gesture, unlike one chained off the camera returning),
-  // and still try automatically at save time as a fallback if not used.
+  // For a camera-sourced one, record the device's current position right
+  // away: the fix the map already got on launch if it's fresh, otherwise a
+  // live request (relaxed settings - network positioning and a recently
+  // cached position are accepted, since the strict GPS-only request was
+  // what kept failing right after the camera app handed control back).
+  // The manual button stays available as a retry, and save time is a
+  // further fallback if it's still missing.
   if (selectedPhotoSource !== 'camera') {
     const latitude = metadata.latitude ?? gpsCoordinateToDecimal(metadata.GPSLatitude, metadata.GPSLatitudeRef);
     const longitude = metadata.longitude ?? gpsCoordinateToDecimal(metadata.GPSLongitude, metadata.GPSLongitudeRef);
@@ -647,9 +648,15 @@ async function handlePhotoFile(file) {
   } else {
     useCurrentLocationForRecordButton.classList.remove('hidden');
     locationStatusText.classList.remove('hidden', 'error', 'approximate');
-    locationStatusText.textContent = currentLanguage === 'ja'
-      ? '下のボタンで位置情報を取得するか、保存時に自動取得を試みます。'
-      : 'Use the button below to fetch location now, or it will be attempted automatically when you save.';
+    locationStatusText.textContent = currentLanguage === 'ja' ? '現在地を取得中…' : 'Getting current location…';
+    recordCategoryInput.value = classifyPhoto(file);
+
+    if (initialLocationPromise) {
+      await initialLocationPromise;
+    }
+    selectedPhotoLocation = getApproximateFallbackLocation(2 * 60 * 1000) || await requestPhotoLocation();
+    updateLocationStatus();
+    return;
   }
 
   recordCategoryInput.value = classifyPhoto(file);
@@ -1607,8 +1614,8 @@ function rememberLocation(lat, lng) {
   lastKnownLocation = { lat, lng, timestamp: Date.now() };
 }
 
-function getApproximateFallbackLocation() {
-  if (!lastKnownLocation || Date.now() - lastKnownLocation.timestamp > 60 * 60 * 1000) {
+function getApproximateFallbackLocation(maxAgeMs = 60 * 60 * 1000) {
+  if (!lastKnownLocation || Date.now() - lastKnownLocation.timestamp > maxAgeMs) {
     return null;
   }
   return {
@@ -1637,7 +1644,7 @@ function centerOnCurrentLocation() {
         ? '現在地を取得できませんでした。ブラウザーの位置情報を許可してください。'
         : 'Could not get your location. Please allow location access in your browser.');
     },
-    { enableHighAccuracy: true, timeout: 10000, maximumAge: 30000 },
+    { enableHighAccuracy: false, timeout: 15000, maximumAge: 30000 },
   );
 }
 
@@ -1666,7 +1673,10 @@ function centerMapOnCurrentLocationOnLoad() {
         // existing records); the locate button remains available to retry.
         resolve();
       },
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 30000 },
+      // Same relaxed settings as requestPhotoLocation(): this fix also seeds
+      // the cache that camera photos fall back on, so it needs to succeed
+      // far more than it needs to be GPS-precise.
+      { enableHighAccuracy: false, timeout: 15000, maximumAge: 60000 },
     );
   });
 

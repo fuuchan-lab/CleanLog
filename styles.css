@@ -983,31 +983,41 @@ h1 {
   border-top: 1px solid var(--line);
 }
 
+/* Grid rather than flex: minmax(0, 1fr) forces the datetime column to give
+   way to the button no matter how wide iOS Safari decides the native
+   datetime-local control "wants" to be (its intrinsic width was overflowing
+   the flex version and rendering underneath the button on real devices). */
 .datetime-location-row {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-end;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
   gap: 8px;
 }
 
 .datetime-location-field {
-  flex: 1 1 150px;
-  min-width: 150px;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .datetime-location-field input {
   /* Font-size stays at the 16px .field input default - anything smaller
      makes iOS Safari auto-zoom the page when this field is focused. */
+  display: block;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  min-height: 44px;
   padding: 10px 6px;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.datetime-location-field input::-webkit-date-and-time-value {
+  text-align: left;
+  min-height: 1.2em;
 }
 
 .datetime-location-button {
-  /* flex-shrink: 0 so this never gets squeezed narrower than its own text -
-     with shrinking allowed, it could render thinner than "現在位置を記録"
-     needs, and the overflowing (nowrap) text would visually spill over the
-     datetime field next to it. Wrap to its own line instead when there's
-     not enough room, rather than shrinking below its content. */
-  flex: 0 0 auto;
   white-space: nowrap;
   padding: 10px 12px;
   font-size: 0.72rem;
