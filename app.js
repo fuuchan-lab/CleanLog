@@ -99,7 +99,7 @@ const recordDateTimeInput = document.getElementById('recordDateTime');
 const photoInput = document.getElementById('photoInput');
 const photoPreview = document.getElementById('photoPreview');
 const locationStatusText = document.getElementById('locationStatusText');
-const pickFromAlbumButton = document.getElementById('pickFromAlbumButton');
+const locationHintText = document.getElementById('locationHintText');
 const recordModal = document.getElementById('recordModal');
 const closeRecordModal = document.getElementById('closeRecordModal');
 const recordForm = document.getElementById('recordForm');
@@ -161,6 +161,7 @@ const translations = {
     recent: '最近の記録', periodFilter: '期間指定', details: '記録詳細', close: '閉じる',
     recordTitle: '記録タイトル', place: '場所', notes: '写真と位置情報を元に、ゴミの状態と種類を記録しています。',
     newRecord: '新しいごみ記録', selectType: '種類を選択', type: '種類', capturedAt: '撮影日時', photo: '写真',
+    locationHint: '正確な位置情報が必要な場合は、端末のカメラアプリで撮影してから、地図上の🖼️ボタン(アルバムから選択)でその写真を選んでください。',
     saveTo: '保存先', driveFolder: 'Google Drive の CleanLog フォルダー', saveDrive: 'Drive に保存',
     selectPeriod: '期間を選択', startDate: '開始日', endDate: '終了日', showPeriod: 'この期間で表示',
     language: '言語/Language', newType: '新しい種類', color: '色', addType: '種類を追加', exampleType: '例：段ボール',
@@ -192,6 +193,7 @@ const translations = {
     recent: 'Recent records', periodFilter: 'Filter by period', details: 'Record details', close: 'Close',
     recordTitle: 'Record title', place: 'Place', notes: 'The waste condition and type are recorded from the photo and location.',
     newRecord: 'New waste record', selectType: 'Select type', type: 'Type', capturedAt: 'Captured at', photo: 'Photo',
+    locationHint: 'For an accurate location, take the photo with your device’s camera app first, then use the 🖼️ button on the map (choose from album) to pick that photo.',
     saveTo: 'Save to', driveFolder: 'Google Drive CleanLog folder', saveDrive: 'Save to Drive',
     selectPeriod: 'Select period', startDate: 'Start date', endDate: 'End date', showPeriod: 'Show this period',
     language: '言語/Language', newType: 'New type', color: 'Color', addType: 'Add type', exampleType: 'e.g. Cardboard',
@@ -291,6 +293,7 @@ function applyTranslations() {
   document.querySelector('.drive-pill').textContent = t('driveFolder');
   document.querySelector('#saveRecordButton').textContent = t('saveDrive');
   photoPreview.alt = currentLanguage === 'ja' ? '撮影した写真のサムネイル' : 'Captured photo thumbnail';
+  locationHintText.textContent = t('locationHint');
   document.querySelector('#dateRangeTitle').textContent = t('selectPeriod');
   closeDateRangeModal.setAttribute('aria-label', t('close'));
   const dateFields = dateRangeForm.querySelectorAll('.field > span');
@@ -655,30 +658,13 @@ function updateLocationStatus() {
 
 function handlePhotoSelected() {
   const file = photoInput.files && photoInput.files[0];
-  if (!file) return;
-
-  // Many mobile browsers strip GPS EXIF from the blob handed back by a live
-  // camera capture, even though the same photo saved normally to the album
-  // keeps it. Show what was just captured as an immediate preview, then ask
-  // the user to tap through to the album to pick that same photo - the copy
-  // handlePhotoFile() actually reads metadata from is the album one. This
-  // has to be a real tap (not an automatic click() chained off the camera's
-  // change event) because browsers don't treat that as a trusted gesture and
-  // silently refuse to open a second file picker.
-  photoPreview.src = URL.createObjectURL(file);
-  photoPreview.classList.remove('hidden');
-  locationStatusText.classList.remove('hidden', 'error', 'approximate');
-  locationStatusText.textContent = currentLanguage === 'ja'
-    ? '位置情報を正しく記録するため、下のボタンから今撮影した写真をアルバムで選択してください。'
-    : 'To record its location correctly, tap the button below and select the photo you just took from your album.';
-  pickFromAlbumButton.classList.remove('hidden');
+  handlePhotoFile(file);
 }
 
 function handleAlbumSelected() {
   const file = albumInput.files && albumInput.files[0];
   if (file) {
     recordModal.classList.remove('hidden');
-    pickFromAlbumButton.classList.add('hidden');
     handlePhotoFile(file);
   }
 }
@@ -702,7 +688,6 @@ async function openRecordModal(source = 'camera') {
   photoPreview.classList.add('hidden');
   locationStatusText.classList.add('hidden');
   locationStatusText.textContent = '';
-  pickFromAlbumButton.classList.add('hidden');
   selectedPhotoFile = null;
   selectedPhotoLocation = null;
   selectedPhotoSource = source;
@@ -1139,10 +1124,6 @@ recordModal.addEventListener('click', (event) => {
 recordForm.addEventListener('submit', saveRecordToDrive);
 photoInput.addEventListener('change', handlePhotoSelected);
 albumInput.addEventListener('change', handleAlbumSelected);
-pickFromAlbumButton.addEventListener('click', () => {
-  albumInput.value = '';
-  albumInput.click();
-});
 settingsButton.addEventListener('click', openSettings);
 closeSettingsModal.addEventListener('click', closeSettings);
 settingsModal.addEventListener('click', (event) => {

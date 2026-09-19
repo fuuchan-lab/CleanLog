@@ -427,6 +427,14 @@ h1 {
   display: none;
 }
 
+.location-hint {
+  margin: 6px 0 0;
+  font-size: 0.68rem;
+  line-height: 1.5;
+  color: var(--muted);
+  opacity: 0.85;
+}
+
 .record-main {
   min-width: 0;
 }
