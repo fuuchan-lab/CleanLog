@@ -240,15 +240,13 @@ function getRecordImageSrc(record) {
   return buildPlaceholderImage(category.color, getCategoryLabel(category).slice(0, 1));
 }
 
-const NO_LOCATION_PLACE_TEXT = ['写真から位置情報なし', 'No location in photo'];
-
 function getRecordPlaceText(record) {
-  // Records saved before location handling was fixed could end up with this
-  // placeholder text permanently baked into their saved place string even
-  // though real coordinates exist (e.g. an old fallback to the map's pan
-  // position). Show the coordinates instead of that stale placeholder
-  // whenever valid ones are actually available.
-  if (NO_LOCATION_PLACE_TEXT.includes(record.place) && hasValidCoordinates(record)) {
+  // Show the actual coordinates whenever they're available, rather than a
+  // generic label like "撮影地点" - the numbers are more informative, and
+  // this also heals older records whose saved place text was a stale
+  // "no location" placeholder despite having real coordinates (e.g. from
+  // the old fallback to the map's pan position).
+  if (hasValidCoordinates(record)) {
     return `${record.lat.toFixed(5)}, ${record.lng.toFixed(5)}`;
   }
   return record.place;
