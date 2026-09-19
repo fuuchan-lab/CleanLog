@@ -236,6 +236,20 @@ function getRecordImageSrc(record) {
   return buildPlaceholderImage(category.color, getCategoryLabel(category).slice(0, 1));
 }
 
+const NO_LOCATION_PLACE_TEXT = ['写真から位置情報なし', 'No location in photo'];
+
+function getRecordPlaceText(record) {
+  // Records saved before location handling was fixed could end up with this
+  // placeholder text permanently baked into their saved place string even
+  // though real coordinates exist (e.g. an old fallback to the map's pan
+  // position). Show the coordinates instead of that stale placeholder
+  // whenever valid ones are actually available.
+  if (NO_LOCATION_PLACE_TEXT.includes(record.place) && hasValidCoordinates(record)) {
+    return `${record.lat.toFixed(5)}, ${record.lng.toFixed(5)}`;
+  }
+  return record.place;
+}
+
 function updateInstallGuide() {
   const accessUrl = ['localhost', '127.0.0.1'].includes(window.location.hostname)
     ? 'http://192.168.1.150:8000/'
@@ -1177,12 +1191,12 @@ function openDetail(record) {
   detailCategoryBadge.textContent = getCategoryLabel(category);
   detailCategoryBadge.style.background = category.color;
   detailTitle.textContent = record.title;
-  detailPlace.textContent = `${record.place} / ${record.categoryLabel || getCategoryLabel(category)}`;
+  detailPlace.textContent = `${getRecordPlaceText(record)} / ${record.categoryLabel || getCategoryLabel(category)}`;
   detailDate.textContent = record.date || '2026/09/12';
   detailTime.textContent = record.time;
   detailNotes.textContent = currentLanguage === 'ja'
-    ? `${record.title}を記録しました。現場は ${record.place} で、${category.label}として分類されています。`
-    : `${record.title} was recorded at ${record.place} and classified as ${getCategoryLabel(category)}.`;
+    ? `${record.title}を記録しました。現場は ${getRecordPlaceText(record)} で、${category.label}として分類されています。`
+    : `${record.title} was recorded at ${getRecordPlaceText(record)} and classified as ${getCategoryLabel(category)}.`;
   detailEditForm.classList.add('hidden');
   updateDetailCategoryOptions();
   detailCategoryInput.value = record.category;
@@ -1416,7 +1430,7 @@ function renderRecords() {
       <img class="record-photo" src="${getRecordImageSrc(item)}" alt="${item.title}" />
       <div class="record-main">
         <p class="record-title">${item.title}</p>
-        <div class="record-meta">${item.place}</div>
+        <div class="record-meta">${getRecordPlaceText(item)}</div>
         <span class="record-badge" style="background:${category.color}">${getCategoryLabel(category)}</span>
       </div>
       <div class="record-time">${item.time}</div>
@@ -1437,7 +1451,7 @@ function buildPopupContent(record) {
     <div class="record-popup">
       <img src="${getRecordImageSrc(record)}" alt="${record.title}" />
       <h4>${record.title}</h4>
-      <p>${record.place}</p>
+      <p>${getRecordPlaceText(record)}</p>
       <p>${record.date || '2026/09/12'} ${record.time}</p>
       <button type="button" class="popup-detail-button" data-record-id="${record.id}">${t('detailButton')}</button>
     </div>
