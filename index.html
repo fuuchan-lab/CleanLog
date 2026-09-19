@@ -105,11 +105,13 @@
             <span id="detailCategoryLabel">種類</span>
             <select id="detailCategoryInput"></select>
           </label>
-          <label class="field">
-            <span id="detailDateTimeLabel">撮影日時</span>
-            <input id="detailDateTimeInput" type="datetime-local" />
-          </label>
-          <button id="useCurrentLocationForDetailButton" type="button" class="secondary-button">現在位置を記録</button>
+          <div class="detail-datetime-row">
+            <label class="field detail-datetime-field">
+              <span id="detailDateTimeLabel">撮影日時</span>
+              <input id="detailDateTimeInput" type="datetime-local" />
+            </label>
+            <button id="useCurrentLocationForDetailButton" type="button" class="secondary-button detail-location-button">現在位置を記録</button>
+          </div>
           <p id="detailLocationStatusText" class="location-status hidden" role="status"></p>
           <div class="detail-edit-actions">
             <button id="updateDetailButton" type="button" class="primary-button">更新</button>
