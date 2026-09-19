@@ -628,7 +628,11 @@ async function handlePhotoFile(file) {
       place: currentLanguage === 'ja' ? '撮影地点(写真情報)' : 'Photo location (from photo)',
     };
   } else if (selectedPhotoSource === 'camera') {
-    selectedPhotoLocation = await requestPhotoLocation();
+    // A live request here has repeatedly proven unreliable (permission
+    // prompts, timeouts) on some phones. The map already gets a real fix on
+    // launch and whenever the locate button is used, so reuse that directly
+    // when it's reasonably fresh instead of gambling on a brand new request.
+    selectedPhotoLocation = getApproximateFallbackLocation() || await requestPhotoLocation();
   }
 
   updateLocationStatus();
@@ -1543,7 +1547,7 @@ function rememberLocation(lat, lng) {
 }
 
 function getApproximateFallbackLocation() {
-  if (!lastKnownLocation || Date.now() - lastKnownLocation.timestamp > 15 * 60 * 1000) {
+  if (!lastKnownLocation || Date.now() - lastKnownLocation.timestamp > 60 * 60 * 1000) {
     return null;
   }
   return {
