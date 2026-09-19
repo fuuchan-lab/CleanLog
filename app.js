@@ -99,6 +99,7 @@ const recordDateTimeInput = document.getElementById('recordDateTime');
 const photoInput = document.getElementById('photoInput');
 const photoPreview = document.getElementById('photoPreview');
 const locationStatusText = document.getElementById('locationStatusText');
+const pickFromAlbumButton = document.getElementById('pickFromAlbumButton');
 const recordModal = document.getElementById('recordModal');
 const closeRecordModal = document.getElementById('closeRecordModal');
 const recordForm = document.getElementById('recordForm');
@@ -658,24 +659,26 @@ function handlePhotoSelected() {
 
   // Many mobile browsers strip GPS EXIF from the blob handed back by a live
   // camera capture, even though the same photo saved normally to the album
-  // keeps it. Show what was just captured as an immediate preview, then send
-  // the user straight into the album picker to pick that same photo - the
-  // copy handlePhotoFile() actually reads metadata from is the album one.
+  // keeps it. Show what was just captured as an immediate preview, then ask
+  // the user to tap through to the album to pick that same photo - the copy
+  // handlePhotoFile() actually reads metadata from is the album one. This
+  // has to be a real tap (not an automatic click() chained off the camera's
+  // change event) because browsers don't treat that as a trusted gesture and
+  // silently refuse to open a second file picker.
   photoPreview.src = URL.createObjectURL(file);
   photoPreview.classList.remove('hidden');
   locationStatusText.classList.remove('hidden', 'error', 'approximate');
   locationStatusText.textContent = currentLanguage === 'ja'
-    ? '位置情報を正しく記録するため、今撮影した写真をアルバムから選択してください。'
-    : 'To record its location correctly, please select the photo you just took from your album.';
-
-  albumInput.value = '';
-  albumInput.click();
+    ? '位置情報を正しく記録するため、下のボタンから今撮影した写真をアルバムで選択してください。'
+    : 'To record its location correctly, tap the button below and select the photo you just took from your album.';
+  pickFromAlbumButton.classList.remove('hidden');
 }
 
 function handleAlbumSelected() {
   const file = albumInput.files && albumInput.files[0];
   if (file) {
     recordModal.classList.remove('hidden');
+    pickFromAlbumButton.classList.add('hidden');
     handlePhotoFile(file);
   }
 }
@@ -699,6 +702,7 @@ async function openRecordModal(source = 'camera') {
   photoPreview.classList.add('hidden');
   locationStatusText.classList.add('hidden');
   locationStatusText.textContent = '';
+  pickFromAlbumButton.classList.add('hidden');
   selectedPhotoFile = null;
   selectedPhotoLocation = null;
   selectedPhotoSource = source;
@@ -1135,6 +1139,10 @@ recordModal.addEventListener('click', (event) => {
 recordForm.addEventListener('submit', saveRecordToDrive);
 photoInput.addEventListener('change', handlePhotoSelected);
 albumInput.addEventListener('change', handleAlbumSelected);
+pickFromAlbumButton.addEventListener('click', () => {
+  albumInput.value = '';
+  albumInput.click();
+});
 settingsButton.addEventListener('click', openSettings);
 closeSettingsModal.addEventListener('click', closeSettings);
 settingsModal.addEventListener('click', (event) => {
