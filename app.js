@@ -63,7 +63,6 @@ categoryMap.unclassified = {
   color: '#a86b43',
 };
 
-const categoryList = document.getElementById('categoryList');
 const recordList = document.getElementById('recordList');
 const detailSheet = document.getElementById('detailSheet');
 const detailImage = document.getElementById('detailImage');
@@ -157,9 +156,8 @@ const translations = {
   ja: {
     appTagline: 'ゴミ拾い記録帳', settings: '設定', login: 'ログイン', connected: 'Google接続中',
     recordPeriod: '記録期間', periodCount: '期間/地図中の数', density: 'ごみ密度 (個/km²)',
-    map: 'ごみ分布マップ', addRecord: '新しい記録を追加', capture: '撮影', categories: 'ごみの種類', all: '全て表示',
+    map: 'ごみ分布マップ', addRecord: '新しい記録を追加', capture: '撮影', categories: 'ごみの種類',
     recent: '最近の記録', periodFilter: '期間指定', details: '記録詳細', close: '閉じる',
-    recordTitle: '記録タイトル', place: '場所', notes: '写真と位置情報を元に、ゴミの状態と種類を記録しています。',
     newRecord: '新しいごみ記録', selectType: '種類を選択', type: '種類', capturedAt: '撮影日時', photo: '写真',
     locationHint: '正確な位置情報が必要な場合は、端末のカメラアプリで撮影してから、地図上の🖼️ボタン(アルバムから選択)でその写真を選んでください。',
     saveTo: '保存先', driveFolder: 'Google Drive の CleanLog フォルダー', saveDrive: 'Drive に保存',
@@ -168,11 +166,10 @@ const translations = {
     installTitle: 'デバイスへのインストール方法', installDescription: '下のQRコードをスマートフォンで読み取ってアクセスしてください。',
     android: 'Android', androidGuide: 'Chromeでアクセスし、メニューから「ホーム画面に追加」または「アプリをインストール」を選択してください。',
     ios: 'iPhone / iPad', iosGuide: 'Safariでアクセスし、共有ボタンから「ホーム画面に追加」を選択してください。', qrAlt: 'アクセス先のQRコード',
-    previousMonth: '前の月', nextMonth: '次の月', save: '保存', update: '更新', delete: '削除', edit: '編集', cancel: 'キャンセル',
+    previousMonth: '前の月', nextMonth: '次の月', update: '更新', delete: '削除', edit: '編集', cancel: 'キャンセル',
     detailButton: '記録詳細を見る',
     loginAlert: 'Googleアカウントでログインしました。写真とデータは Google Drive の CleanLog フォルダーに保存されます。',
     savedAlert: '写真とデータを Google Drive の CleanLog フォルダーに保存しました。',
-    deleteSavedAlert: '保存済みの記録とアイコンは残したまま、種類を一覧から削除しました。',
     account: 'アカウント', switchAccount: 'アカウントを切り替え', signOut: 'ログアウト',
     connecting: '接続中…',
     clientIdMissingAlert: 'Google Drive連携用のクライアントIDが未設定です。app.js の driveConfig.clientId を設定してください。',
@@ -183,7 +180,6 @@ const translations = {
     savingToDrive: '保存中…',
     updateFailedAlert: 'Google Driveへの更新の反映に失敗しました。',
     deleteFailedAlert: 'Google Drive上のファイル削除に失敗しました。',
-    loadFailedAlert: 'Google Driveからの記録の読み込みに失敗しました。',
     weekdays: ['日', '月', '火', '水', '木', '金', '土'],
   },
   en: {
@@ -200,11 +196,10 @@ const translations = {
     installTitle: 'How to install on your device', installDescription: 'Scan the QR code below with your smartphone to open CleanLog.',
     android: 'Android', androidGuide: 'Open this page in Chrome, then choose “Add to Home screen” or “Install app” from the menu.',
     ios: 'iPhone / iPad', iosGuide: 'Open this page in Safari, tap the Share button, then choose “Add to Home Screen”.', qrAlt: 'QR code for this app',
-    previousMonth: 'Previous month', nextMonth: 'Next month', save: 'Save', update: 'Update', delete: 'Delete', edit: 'Edit', cancel: 'Cancel',
+    previousMonth: 'Previous month', nextMonth: 'Next month', update: 'Update', delete: 'Delete', edit: 'Edit', cancel: 'Cancel',
     detailButton: 'View record details',
     loginAlert: 'You are now signed in with Google. Photos and data will be saved to the CleanLog folder.',
     savedAlert: 'The photo and data were saved to the CleanLog folder in Google Drive.',
-    deleteSavedAlert: 'The saved record and its map icon remain, while this type was removed from the list.',
     account: 'Account', switchAccount: 'Switch account', signOut: 'Sign out',
     connecting: 'Connecting…',
     clientIdMissingAlert: 'The Google Drive client ID is not configured. Please set driveConfig.clientId in app.js.',
@@ -215,7 +210,6 @@ const translations = {
     savingToDrive: 'Saving…',
     updateFailedAlert: 'Failed to sync the update to Google Drive.',
     deleteFailedAlert: 'Failed to remove the file from Google Drive.',
-    loadFailedAlert: 'Failed to load records from Google Drive.',
     weekdays: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
   },
 };
@@ -320,7 +314,6 @@ function applyTranslations() {
   categoryFields[1].textContent = t('color');
   categoryNameInput.placeholder = t('exampleType');
   categoryForm.querySelector('.primary-button').textContent = t('addType');
-  renderCategoryFilters();
   updateRecordCategoryOptions();
   renderSettingsCategories();
   renderRecords();
@@ -1267,33 +1260,6 @@ document.addEventListener('keydown', (event) => {
   }
 });
 
-function createCategoryChip(category, active = true) {
-  const button = document.createElement('button');
-  button.type = 'button';
-  button.className = `category-chip${active ? ' active' : ''}`;
-  button.dataset.category = category.key;
-  button.innerHTML = `
-    <span class="color-dot" style="background:${category.color}"></span>
-    <span>${getCategoryLabel(category)}</span>
-  `;
-  button.addEventListener('click', () => {
-    if (!categoryList) return;
-    button.classList.toggle('active');
-    activeCategoryKeys = Array.from(document.querySelectorAll('.category-chip.active')).map((chip) => chip.dataset.category);
-    renderMarkers(activeCategoryKeys);
-    renderDateRangeSummary();
-  });
-  return button;
-}
-
-function renderCategoryFilters() {
-  if (!categoryList) return;
-  categoryList.innerHTML = '';
-  categories.forEach((category) => {
-    categoryList.appendChild(createCategoryChip(category, true));
-  });
-}
-
 function updateRecordCategoryOptions() {
   recordCategoryInput.innerHTML = categories
     .map((category) => `<option value="${category.key}">${getCategoryLabel(category)}</option>`)
@@ -1346,7 +1312,6 @@ function renderSettingsCategories() {
         category.label = nextLabel;
         if (!category.labelEn || currentLanguage === 'en') category.labelEn = nextLabel;
         category.color = colorInput.value;
-        renderCategoryFilters();
         updateRecordCategoryOptions();
         renderSettingsCategories();
         renderRecords();
@@ -1358,7 +1323,6 @@ function renderSettingsCategories() {
         event.stopPropagation();
         const categoryIndex = categories.findIndex((item) => item.key === category.key);
         categories.splice(categoryIndex, 1);
-        renderCategoryFilters();
         updateRecordCategoryOptions();
         renderSettingsCategories();
         renderMarkers(activeCategoryKeys);
@@ -1420,7 +1384,6 @@ function addCategory(event) {
   categories.push(category);
   categoryMap[category.key] = category;
   activeCategoryKeys.push(category.key);
-  renderCategoryFilters();
   updateRecordCategoryOptions();
   renderSettingsCategories();
   categoryNameInput.value = '';
@@ -1669,7 +1632,6 @@ map.on('moveend zoomend', renderDateRangeSummary);
 
 setDefaultDateRange();
 renderDateRangeSummary();
-renderCategoryFilters();
 renderRecords();
 renderMarkers();
 

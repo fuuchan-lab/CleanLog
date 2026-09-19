@@ -1,7 +1,5 @@
 :root {
-  --bg: #17110e;
   --surface: #241914;
-  --surface-alt: #302019;
   --text: #fff8f1;
   --muted: #c2aa98;
   --line: rgba(255, 235, 218, 0.14);
@@ -11,12 +9,6 @@
   --shadow: 0 18px 38px rgba(0, 0, 0, 0.28);
   --danger: #e56d53;
   --amber: #e1a43a;
-  --berry: #c86079;
-  --blue: #3b82f6;
-  --purple: #7c6ae1;
-  --teal: #14a9a7;
-  --olive: #7ea843;
-  --peach: #ef9b73;
   --panel-radius: 20px;
 }
 
@@ -305,7 +297,6 @@ h1 {
   display: none;
 }
 
-.category-panel,
 .list-panel {
   background: rgba(36, 25, 20, 0.96);
   border: 1px solid var(--line);
@@ -336,30 +327,6 @@ h1 {
   color: #e0a477;
   font-weight: 700;
   padding: 0;
-}
-
-.chip-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.category-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 7px 10px;
-  border-radius: 999px;
-  border: 1px solid var(--line);
-  background: #302019;
-  color: var(--text);
-  font-size: 0.72rem;
-  font-weight: 600;
-}
-
-.category-chip.active {
-  border-color: rgba(29, 125, 85, 0.18);
-  background: var(--green-soft);
 }
 
 .color-dot {
@@ -891,10 +858,6 @@ h1 {
 .calendar-day {
   min-height: 32px;
   font-size: 0.75rem;
-}
-
-.calendar-day.muted {
-  color: #765f51;
 }
 
 .calendar-day.selected {
