@@ -394,15 +394,6 @@ h1 {
   display: none;
 }
 
-.record-location-button {
-  width: 100%;
-  margin-top: 6px;
-}
-
-.record-location-button.hidden {
-  display: none;
-}
-
 .location-hint {
   margin: 6px 0 0;
   font-size: 0.68rem;
@@ -992,28 +983,33 @@ h1 {
   border-top: 1px solid var(--line);
 }
 
-.detail-datetime-row {
+.datetime-location-row {
   display: flex;
+  flex-wrap: wrap;
   align-items: flex-end;
   gap: 8px;
 }
 
-.detail-datetime-field {
-  flex: 1;
-  min-width: 0;
+.datetime-location-field {
+  flex: 1 1 150px;
+  min-width: 150px;
 }
 
-.detail-datetime-field input {
+.datetime-location-field input {
   /* Font-size stays at the 16px .field input default - anything smaller
      makes iOS Safari auto-zoom the page when this field is focused. */
-  padding: 10px 8px;
+  padding: 10px 6px;
 }
 
-.detail-location-button {
-  flex: 0 0 auto;
+.datetime-location-button {
+  flex: 1 1 auto;
   white-space: nowrap;
-  padding: 10px 12px;
-  font-size: 0.78rem;
+  padding: 10px 10px;
+  font-size: 0.72rem;
+}
+
+.datetime-location-button.hidden {
+  display: none;
 }
 
 .detail-edit-form.hidden {

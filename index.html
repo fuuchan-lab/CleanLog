@@ -105,12 +105,12 @@
             <span id="detailCategoryLabel">種類</span>
             <select id="detailCategoryInput"></select>
           </label>
-          <div class="detail-datetime-row">
-            <label class="field detail-datetime-field">
+          <div class="datetime-location-row">
+            <label class="field datetime-location-field">
               <span id="detailDateTimeLabel">撮影日時</span>
               <input id="detailDateTimeInput" type="datetime-local" />
             </label>
-            <button id="useCurrentLocationForDetailButton" type="button" class="secondary-button detail-location-button">現在位置を記録</button>
+            <button id="useCurrentLocationForDetailButton" type="button" class="secondary-button datetime-location-button">現在位置を記録</button>
           </div>
           <p id="detailLocationStatusText" class="location-status hidden" role="status"></p>
           <div class="detail-edit-actions">
@@ -133,8 +133,6 @@
             <span>写真</span>
             <input id="photoInput" type="file" accept="image/*" capture="environment" />
             <img id="photoPreview" class="photo-preview hidden" src="" alt="撮影した写真のサムネイル" />
-            <button id="useCurrentLocationForRecordButton" type="button" class="secondary-button record-location-button hidden">現在位置を記録</button>
-            <p id="locationStatusText" class="location-status hidden" role="status"></p>
             <p id="locationHintText" class="location-hint">正確な位置情報が必要な場合は、端末のカメラアプリで撮影してから、地図上の🖼️ボタン(アルバムから選択)でその写真を選んでください。</p>
           </label>
 
@@ -152,10 +150,14 @@
             </select>
           </label>
 
-          <label class="field">
-            <span>撮影日時</span>
-            <input id="recordDateTime" type="datetime-local" />
-          </label>
+          <div class="datetime-location-row">
+            <label class="field datetime-location-field">
+              <span>撮影日時</span>
+              <input id="recordDateTime" type="datetime-local" />
+            </label>
+            <button id="useCurrentLocationForRecordButton" type="button" class="secondary-button datetime-location-button hidden">現在位置を記録</button>
+          </div>
+          <p id="locationStatusText" class="location-status hidden" role="status"></p>
 
           <div class="field">
             <span>保存先</span>

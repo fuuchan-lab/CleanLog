@@ -1207,6 +1207,20 @@ updateLoginState();
 updateRecordCategoryOptions();
 applyTranslations();
 
+function refreshDetailPlaceText() {
+  if (!activeDetailRecord) return;
+  const category = categoryMap[activeDetailRecord.category];
+  // Preview the not-yet-saved location fetched via 現在位置を記録 as soon as
+  // it's available, rather than only reflecting it after 更新 is pressed.
+  const placeText = pendingDetailLocation
+    ? `${pendingDetailLocation.lat.toFixed(5)}, ${pendingDetailLocation.lng.toFixed(5)}`
+    : getRecordPlaceText(activeDetailRecord);
+  detailPlace.textContent = `${placeText} / ${activeDetailRecord.categoryLabel || getCategoryLabel(category)}`;
+  detailNotes.textContent = currentLanguage === 'ja'
+    ? `${activeDetailRecord.title}を記録しました。現場は ${placeText} で、${category.label}として分類されています。`
+    : `${activeDetailRecord.title} was recorded at ${placeText} and classified as ${getCategoryLabel(category)}.`;
+}
+
 function openDetail(record) {
   activeDetailRecord = record;
   const category = categoryMap[record.category];
@@ -1215,12 +1229,9 @@ function openDetail(record) {
   detailCategoryBadge.textContent = getCategoryLabel(category);
   detailCategoryBadge.style.background = category.color;
   detailTitle.textContent = record.title;
-  detailPlace.textContent = `${getRecordPlaceText(record)} / ${record.categoryLabel || getCategoryLabel(category)}`;
   detailDate.textContent = record.date || '2026/09/12';
   detailTime.textContent = record.time;
-  detailNotes.textContent = currentLanguage === 'ja'
-    ? `${record.title}を記録しました。現場は ${getRecordPlaceText(record)} で、${category.label}として分類されています。`
-    : `${record.title} was recorded at ${getRecordPlaceText(record)} and classified as ${getCategoryLabel(category)}.`;
+  refreshDetailPlaceText();
   detailEditForm.classList.add('hidden');
   updateDetailCategoryOptions();
   detailCategoryInput.value = record.category;
@@ -1259,6 +1270,7 @@ async function handleUseCurrentLocationForDetail() {
 
   if (location) {
     pendingDetailLocation = location;
+    refreshDetailPlaceText();
     const coords = `${location.lat.toFixed(5)}, ${location.lng.toFixed(5)}`;
     detailLocationStatusText.textContent = currentLanguage === 'ja' ? `位置情報: ${coords}` : `Location: ${coords}`;
   } else {
