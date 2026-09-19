@@ -625,6 +625,12 @@ async function handlePhotoFile(file) {
     // prompts, timeouts) on some phones. The map already gets a real fix on
     // launch and whenever the locate button is used, so reuse that directly
     // when it's reasonably fresh instead of gambling on a brand new request.
+    // If that launch-time fetch is still in flight (photo taken within the
+    // first few seconds of opening the app), wait for it rather than
+    // treating the cache as empty just because it hasn't resolved yet.
+    if (initialLocationPromise) {
+      await initialLocationPromise;
+    }
     selectedPhotoLocation = getApproximateFallbackLocation() || await requestPhotoLocation();
   }
 
@@ -1543,22 +1549,36 @@ function centerOnCurrentLocation() {
   );
 }
 
-function centerMapOnCurrentLocationOnLoad() {
-  if (!navigator.geolocation || !window.isSecureContext) return;
+// Tracks the initial, launch-time location fetch so a photo taken in the
+// first few seconds after opening the app (before this resolves) can wait
+// for it instead of finding lastKnownLocation still empty.
+let initialLocationPromise = null;
 
-  navigator.geolocation.getCurrentPosition(
-    (position) => {
-      const currentLocation = [position.coords.latitude, position.coords.longitude];
-      rememberLocation(position.coords.latitude, position.coords.longitude);
-      map.setView(currentLocation, 15, { animate: true });
-      placeCurrentLocationMarker(currentLocation);
-    },
-    () => {
-      // Keep whatever view the map already has (default center, or fit to
-      // existing records); the locate button remains available to retry.
-    },
-    { enableHighAccuracy: true, timeout: 10000, maximumAge: 30000 },
-  );
+function centerMapOnCurrentLocationOnLoad() {
+  if (!navigator.geolocation || !window.isSecureContext) {
+    initialLocationPromise = Promise.resolve();
+    return initialLocationPromise;
+  }
+
+  initialLocationPromise = new Promise((resolve) => {
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const currentLocation = [position.coords.latitude, position.coords.longitude];
+        rememberLocation(position.coords.latitude, position.coords.longitude);
+        map.setView(currentLocation, 15, { animate: true });
+        placeCurrentLocationMarker(currentLocation);
+        resolve();
+      },
+      () => {
+        // Keep whatever view the map already has (default center, or fit to
+        // existing records); the locate button remains available to retry.
+        resolve();
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 30000 },
+    );
+  });
+
+  return initialLocationPromise;
 }
 
 function describeGeolocationError(error) {
