@@ -394,6 +394,15 @@ h1 {
   display: none;
 }
 
+.record-location-button {
+  width: 100%;
+  margin-top: 6px;
+}
+
+.record-location-button.hidden {
+  display: none;
+}
+
 .location-hint {
   margin: 6px 0 0;
   font-size: 0.68rem;

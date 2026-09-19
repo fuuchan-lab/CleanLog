@@ -101,6 +101,7 @@ const photoInput = document.getElementById('photoInput');
 const photoPreview = document.getElementById('photoPreview');
 const locationStatusText = document.getElementById('locationStatusText');
 const locationHintText = document.getElementById('locationHintText');
+const useCurrentLocationForRecordButton = document.getElementById('useCurrentLocationForRecordButton');
 const recordModal = document.getElementById('recordModal');
 const closeRecordModal = document.getElementById('closeRecordModal');
 const recordForm = document.getElementById('recordForm');
@@ -305,6 +306,7 @@ function applyTranslations() {
   document.querySelector('.drive-pill').textContent = t('driveFolder');
   document.querySelector('#saveRecordButton').textContent = t('saveDrive');
   photoPreview.alt = currentLanguage === 'ja' ? '撮影した写真のサムネイル' : 'Captured photo thumbnail';
+  useCurrentLocationForRecordButton.textContent = t('useCurrentLocation');
   locationHintText.textContent = t('locationHint');
   document.querySelector('#dateRangeTitle').textContent = t('selectPeriod');
   closeDateRangeModal.setAttribute('aria-label', t('close'));
@@ -628,8 +630,10 @@ async function handlePhotoFile(file) {
   // camera app actually took it) is the only location signal available.
   // For a camera-sourced one, skip EXIF/live lookups here entirely - a
   // geolocation request made right as the page regains focus from the
-  // camera app has proven unreliable on several phones - and fetch it
-  // fresh at save time instead, once the page has been stable for a while.
+  // camera app has proven unreliable on several phones. Show the manual
+  // "現在位置を記録" button instead (confirmed reliable when tapped as its
+  // own, isolated gesture, unlike one chained off the camera returning),
+  // and still try automatically at save time as a fallback if not used.
   if (selectedPhotoSource !== 'camera') {
     const latitude = metadata.latitude ?? gpsCoordinateToDecimal(metadata.GPSLatitude, metadata.GPSLatitudeRef);
     const longitude = metadata.longitude ?? gpsCoordinateToDecimal(metadata.GPSLongitude, metadata.GPSLongitudeRef);
@@ -643,13 +647,29 @@ async function handlePhotoFile(file) {
     }
     updateLocationStatus();
   } else {
+    useCurrentLocationForRecordButton.classList.remove('hidden');
     locationStatusText.classList.remove('hidden', 'error', 'approximate');
     locationStatusText.textContent = currentLanguage === 'ja'
-      ? '位置情報は保存時に取得します。'
-      : 'Location will be fetched when you save.';
+      ? '下のボタンで位置情報を取得するか、保存時に自動取得を試みます。'
+      : 'Use the button below to fetch location now, or it will be attempted automatically when you save.';
   }
 
   recordCategoryInput.value = classifyPhoto(file);
+}
+
+async function handleUseCurrentLocationForRecord() {
+  useCurrentLocationForRecordButton.disabled = true;
+  locationStatusText.classList.remove('hidden', 'error', 'approximate');
+  locationStatusText.textContent = currentLanguage === 'ja' ? '現在地を取得中…' : 'Getting current location…';
+
+  const location = await requestPhotoLocation();
+
+  useCurrentLocationForRecordButton.disabled = false;
+
+  if (location) {
+    selectedPhotoLocation = location;
+  }
+  updateLocationStatus();
 }
 
 function updateLocationStatus() {
@@ -705,6 +725,7 @@ async function openRecordModal(source = 'camera') {
   photoPreview.classList.add('hidden');
   locationStatusText.classList.add('hidden');
   locationStatusText.textContent = '';
+  useCurrentLocationForRecordButton.classList.add('hidden');
   selectedPhotoFile = null;
   selectedPhotoLocation = null;
   selectedPhotoSource = source;
@@ -1152,6 +1173,7 @@ recordModal.addEventListener('click', (event) => {
 recordForm.addEventListener('submit', saveRecordToDrive);
 photoInput.addEventListener('change', handlePhotoSelected);
 albumInput.addEventListener('change', handleAlbumSelected);
+useCurrentLocationForRecordButton.addEventListener('click', handleUseCurrentLocationForRecord);
 settingsButton.addEventListener('click', openSettings);
 closeSettingsModal.addEventListener('click', closeSettings);
 settingsModal.addEventListener('click', (event) => {
