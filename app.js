@@ -606,35 +606,31 @@ async function handlePhotoFile(file) {
   const capturedDate = parseExifDate(metadata.DateTimeOriginal || metadata.CreateDate || metadata.ModifyDate);
   recordDateTimeInput.value = toDateTimeLocalValue(capturedDate || new Date(file.lastModified || Date.now()));
 
-  // Prefer the photo's own GPS EXIF over a live browser geolocation request:
-  // it reflects the instant the shutter was actually pressed, whereas a
-  // browser fix taken after returning from the camera app can be seconds (or
-  // more, if the photo was reviewed before confirming) removed from that
-  // moment - and it's unaffected by geolocation permission/timeout issues.
-  const latitude = metadata.latitude ?? gpsCoordinateToDecimal(metadata.GPSLatitude, metadata.GPSLatitudeRef);
-  const longitude = metadata.longitude ?? gpsCoordinateToDecimal(metadata.GPSLongitude, metadata.GPSLongitudeRef);
+  // For an album-sourced photo, the file's own GPS EXIF (from whatever
+  // camera app actually took it) is the only location signal available.
+  // For a camera-sourced one, skip EXIF/live lookups here entirely - a
+  // geolocation request made right as the page regains focus from the
+  // camera app has proven unreliable on several phones - and fetch it
+  // fresh at save time instead, once the page has been stable for a while.
+  if (selectedPhotoSource !== 'camera') {
+    const latitude = metadata.latitude ?? gpsCoordinateToDecimal(metadata.GPSLatitude, metadata.GPSLatitudeRef);
+    const longitude = metadata.longitude ?? gpsCoordinateToDecimal(metadata.GPSLongitude, metadata.GPSLongitudeRef);
 
-  if (Number.isFinite(latitude) && Number.isFinite(longitude)) {
-    selectedPhotoLocation = {
-      lat: latitude,
-      lng: longitude,
-      place: currentLanguage === 'ja' ? '撮影地点(写真情報)' : 'Photo location (from photo)',
-    };
-  } else if (selectedPhotoSource === 'camera') {
-    // A live request here has repeatedly proven unreliable (permission
-    // prompts, timeouts) on some phones. The map already gets a real fix on
-    // launch and whenever the locate button is used, so reuse that directly
-    // when it's reasonably fresh instead of gambling on a brand new request.
-    // If that launch-time fetch is still in flight (photo taken within the
-    // first few seconds of opening the app), wait for it rather than
-    // treating the cache as empty just because it hasn't resolved yet.
-    if (initialLocationPromise) {
-      await initialLocationPromise;
+    if (Number.isFinite(latitude) && Number.isFinite(longitude)) {
+      selectedPhotoLocation = {
+        lat: latitude,
+        lng: longitude,
+        place: currentLanguage === 'ja' ? '撮影地点(写真情報)' : 'Photo location (from photo)',
+      };
     }
-    selectedPhotoLocation = getApproximateFallbackLocation() || await requestPhotoLocation();
+    updateLocationStatus();
+  } else {
+    locationStatusText.classList.remove('hidden', 'error', 'approximate');
+    locationStatusText.textContent = currentLanguage === 'ja'
+      ? '位置情報は保存時に取得します。'
+      : 'Location will be fetched when you save.';
   }
 
-  updateLocationStatus();
   recordCategoryInput.value = classifyPhoto(file);
 }
 
@@ -1063,6 +1059,17 @@ async function saveRecordToDrive(event) {
 
   saveRecordButton.disabled = true;
   saveRecordButton.textContent = t('savingToDrive');
+
+  if (selectedPhotoSource === 'camera' && !selectedPhotoLocation) {
+    // The page has been stable (showing the category/date fields) for a
+    // while by now, rather than having just regained focus from the camera
+    // app, so a live request here is far more likely to actually succeed.
+    if (initialLocationPromise) {
+      await initialLocationPromise;
+    }
+    selectedPhotoLocation = await requestPhotoLocation() || getApproximateFallbackLocation();
+    updateLocationStatus();
+  }
 
   try {
     const photoFileName = `CleanLog-${id}.jpg`;
