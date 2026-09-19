@@ -1668,9 +1668,8 @@ renderMarkers();
 
 window.map = map;
 
-// Let Drive records finish loading (and fitting the map to them) first, so
-// the current-location center requested on top of that always has the
-// final say on where the map ends up.
-const driveSessionReadyPromise = restoreDriveSession().finally(() => {
-  centerMapOnCurrentLocationOnLoad();
-});
+// Center on the device's current location right away, in parallel with
+// loading Drive records, so the map opens on "where you are" as fast as
+// possible instead of waiting on the network round trip for Drive first.
+centerMapOnCurrentLocationOnLoad();
+const driveSessionReadyPromise = restoreDriveSession();
