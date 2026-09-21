@@ -116,6 +116,7 @@ const accountModalEmail = document.getElementById('accountModalEmail');
 const switchAccountButton = document.getElementById('switchAccountButton');
 const signOutButton = document.getElementById('signOutButton');
 const languageSelect = document.getElementById('languageSelect');
+const themeSelect = document.getElementById('themeSelect');
 const dateRangeButton = document.getElementById('dateRangeButton');
 const dateRangeValue = document.getElementById('dateRangeValue');
 const rangeCountValue = document.getElementById('rangeCountValue');
@@ -185,6 +186,7 @@ const translations = {
     savingToDrive: '保存中…',
     updateFailedAlert: 'Google Driveへの更新の反映に失敗しました。',
     deleteFailedAlert: 'Google Drive上のファイル削除に失敗しました。',
+    themeTitle: '画面の配色', themeAuto: '自動（端末の設定に合わせる）', themeLight: 'ライト', themeDark: 'ダーク',
     weekdays: ['日', '月', '火', '水', '木', '金', '土'],
   },
   en: {
@@ -216,6 +218,7 @@ const translations = {
     savingToDrive: 'Saving…',
     updateFailedAlert: 'Failed to sync the update to Google Drive.',
     deleteFailedAlert: 'Failed to remove the file from Google Drive.',
+    themeTitle: 'Appearance', themeAuto: 'Auto (follow device)', themeLight: 'Light', themeDark: 'Dark',
     weekdays: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
   },
 };
@@ -321,6 +324,11 @@ function applyTranslations() {
   document.querySelector('#categorySettingsTitle').textContent = t('categories');
   document.querySelector('#languageSettingsTitle').textContent = t('language');
   document.querySelector('#languageSelect').setAttribute('aria-label', t('language'));
+  document.querySelector('#themeSettingsTitle').textContent = t('themeTitle');
+  themeSelect.setAttribute('aria-label', t('themeTitle'));
+  themeSelect.options[0].textContent = t('themeAuto');
+  themeSelect.options[1].textContent = t('themeLight');
+  themeSelect.options[2].textContent = t('themeDark');
   document.querySelector('#installSettingsTitle').textContent = t('installTitle');
   document.querySelector('#installDescription').textContent = t('installDescription');
   document.querySelector('#installQrCode').alt = t('qrAlt');
@@ -1229,6 +1237,26 @@ languageSelect.addEventListener('change', () => {
   currentLanguage = languageSelect.value;
   localStorage.setItem('cleanlog-language', currentLanguage);
   applyTranslations();
+});
+function loadThemePreference() {
+  try {
+    const saved = localStorage.getItem('cleanlog-theme');
+    return saved === 'light' || saved === 'dark' ? saved : 'auto';
+  } catch (error) {
+    return 'auto';
+  }
+}
+
+themeSelect.value = loadThemePreference();
+themeSelect.addEventListener('change', () => {
+  const preference = themeSelect.value;
+  try {
+    if (preference === 'auto') localStorage.removeItem('cleanlog-theme');
+    else localStorage.setItem('cleanlog-theme', preference);
+  } catch (error) {
+    // 保存できなくても、その回の表示は切り替わる
+  }
+  window.cleanlogApplyTheme(preference);
 });
 updateLoginState();
 updateRecordCategoryOptions();

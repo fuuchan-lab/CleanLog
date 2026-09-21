@@ -15,6 +15,25 @@
         --line: rgba(255, 235, 218, 0.14);
         --accent: #e1a43a;
       }
+      /* アプリの設定で選んだ配色（ライト/ダーク）に合わせる。自動の時は端末の設定に従う */
+      :root[data-theme='light'] {
+        --bg: #f6ece2;
+        --surface: #ffffff;
+        --text: #2a1a12;
+        --muted: #6f5a4a;
+        --line: rgba(60, 35, 20, 0.14);
+        --accent: #8a4f2c;
+      }
+      @media (prefers-color-scheme: light) {
+        :root:not([data-theme]) {
+          --bg: #f6ece2;
+          --surface: #ffffff;
+          --text: #2a1a12;
+          --muted: #6f5a4a;
+          --line: rgba(60, 35, 20, 0.14);
+          --accent: #8a4f2c;
+        }
+      }
       * { box-sizing: border-box; }
       body {
         margin: 0;
@@ -42,6 +61,12 @@
       a { color: var(--accent); overflow-wrap: anywhere; }
       .back { display: inline-block; margin-bottom: 20px; font-size: 0.9rem; }
     </style>
+    <script>
+      try {
+        var theme = localStorage.getItem('cleanlog-theme');
+        if (theme === 'light' || theme === 'dark') document.documentElement.setAttribute('data-theme', theme);
+      } catch (e) {}
+    </script>
   </head>
   <body>
     <main>

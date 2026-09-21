@@ -1,5 +1,73 @@
 :root {
+  --page-top: #f6ece2;
+  --page-bottom: #fbf6f0;
+  --shell-top: #fdf8f3;
+  --shell-bottom: #f6ece2;
+  --surface: #ffffff;
+  --surface-glass: rgba(255, 255, 255, 0.97);
+  --input-bg: #f7efe7;
+  --panel: #ffffff;
+  --panel-strong: #efe3d6;
+  --panel-accent: rgba(168, 107, 67, 0.16);
+  --panel-accent-line: rgba(116, 69, 46, 0.35);
+  --map-bg: #eadccc;
+  --float-bg: rgba(255, 255, 255, 0.96);
+  --float-line: rgba(60, 35, 20, 0.18);
+  --float-hover: #ecd9c7;
+  --float-shadow: 0 8px 16px rgba(60, 35, 20, 0.22);
+  --photo-a: #e6d3c0;
+  --photo-b: #f6ece2;
+  --link: #8a4f2c;
+  --close-bg: rgba(60, 35, 20, 0.08);
+  --text: #2a1a12;
+  --muted: #6f5a4a;
+  --line: rgba(60, 35, 20, 0.14);
+  --green: #a86b43;
+  --green-strong: #74452e;
+  --green-soft: rgba(133, 78, 43, 0.22);
+  --shadow: 0 12px 28px rgba(60, 35, 20, 0.14);
+  --shadow-sm: 0 6px 16px rgba(60, 35, 20, 0.1);
+  --sheet-shadow: 0 -14px 32px rgba(60, 35, 20, 0.22);
+  --danger: #c4472f;
+  --amber: #9a6500;
+  --gear-light: #f6dcc4;
+  --gear-mid: #c98b5a;
+  --gear-dark: #74452e;
+  --gear-hole-light: #78665a;
+  --gear-hole-dark: #1c120d;
+  --scheme: light;
+  --panel-radius: 20px;
+  color-scheme: light dark;
+}
+
+/* 配色は、設定で「ライト」「ダーク」を選ぶとその配色に固定（data-theme）。「自動」は端末の設定に従う。
+   ダークの色は2か所に同じものを書く必要があるので、変えるときは両方そろえる */
+:root[data-theme='light'] {
+  color-scheme: light;
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --page-top: #17110e;
+  --page-bottom: #261812;
+  --shell-top: #211611;
+  --shell-bottom: #17110e;
   --surface: #241914;
+  --surface-glass: rgba(36, 25, 20, 0.97);
+  --input-bg: #17110e;
+  --panel: rgba(48, 32, 25, 0.96);
+  --panel-strong: #302019;
+  --panel-accent: rgba(113, 67, 40, 0.48);
+  --panel-accent-line: rgba(190, 125, 79, 0.36);
+  --map-bg: #3a281f;
+  --float-bg: rgba(36, 25, 20, 0.94);
+  --float-line: rgba(255, 235, 218, 0.2);
+  --float-hover: #74452e;
+  --float-shadow: 0 10px 20px rgba(0, 0, 0, 0.32);
+  --photo-a: #4a3023;
+  --photo-b: #241712;
+  --link: #e0a477;
+  --close-bg: rgba(220, 238, 224, 0.1);
   --text: #fff8f1;
   --muted: #c2aa98;
   --line: rgba(255, 235, 218, 0.14);
@@ -7,9 +75,58 @@
   --green-strong: #74452e;
   --green-soft: rgba(133, 78, 43, 0.3);
   --shadow: 0 18px 38px rgba(0, 0, 0, 0.28);
+  --shadow-sm: 0 8px 20px rgba(0, 0, 0, 0.2);
+  --sheet-shadow: 0 -22px 40px rgba(0, 0, 0, 0.42);
   --danger: #e56d53;
   --amber: #e1a43a;
-  --panel-radius: 20px;
+  --gear-light: #f6dcc4;
+  --gear-mid: #d19a6c;
+  --gear-dark: #8a5636;
+  --gear-hole-light: #a8917f;
+  --gear-hole-dark: #120b08;
+  --scheme: dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    --page-top: #17110e;
+    --page-bottom: #261812;
+    --shell-top: #211611;
+    --shell-bottom: #17110e;
+    --surface: #241914;
+    --surface-glass: rgba(36, 25, 20, 0.97);
+    --input-bg: #17110e;
+    --panel: rgba(48, 32, 25, 0.96);
+    --panel-strong: #302019;
+    --panel-accent: rgba(113, 67, 40, 0.48);
+    --panel-accent-line: rgba(190, 125, 79, 0.36);
+    --map-bg: #3a281f;
+    --float-bg: rgba(36, 25, 20, 0.94);
+    --float-line: rgba(255, 235, 218, 0.2);
+    --float-hover: #74452e;
+    --float-shadow: 0 10px 20px rgba(0, 0, 0, 0.32);
+    --photo-a: #4a3023;
+    --photo-b: #241712;
+    --link: #e0a477;
+    --close-bg: rgba(220, 238, 224, 0.1);
+    --text: #fff8f1;
+    --muted: #c2aa98;
+    --line: rgba(255, 235, 218, 0.14);
+    --green: #a86b43;
+    --green-strong: #74452e;
+    --green-soft: rgba(133, 78, 43, 0.3);
+    --shadow: 0 18px 38px rgba(0, 0, 0, 0.28);
+    --shadow-sm: 0 8px 20px rgba(0, 0, 0, 0.2);
+    --sheet-shadow: 0 -22px 40px rgba(0, 0, 0, 0.42);
+    --danger: #e56d53;
+    --amber: #e1a43a;
+    --gear-light: #f6dcc4;
+    --gear-mid: #d19a6c;
+    --gear-dark: #8a5636;
+    --gear-hole-light: #a8917f;
+    --gear-hole-dark: #120b08;
+    --scheme: dark;
+  }
 }
 
 * {
@@ -17,14 +134,14 @@
 }
 
 html {
-  background: linear-gradient(180deg, #17110e 0%, #261812 100%);
+  background: linear-gradient(180deg, var(--page-top) 0%, var(--page-bottom) 100%);
   overflow-x: hidden;
 }
 
 body {
   margin: 0;
   font-family: "Noto Sans JP", sans-serif;
-  background: #17110e;
+  background: var(--page-top);
   color: var(--text);
   overflow-x: hidden;
 }
@@ -38,7 +155,7 @@ button {
   min-height: 100vh;
   margin: 0 auto;
   padding: max(16px, env(safe-area-inset-top)) 16px max(28px, env(safe-area-inset-bottom));
-  background: linear-gradient(180deg, #211611 0%, #17110e 100%);
+  background: linear-gradient(180deg, var(--shell-top) 0%, var(--shell-bottom) 100%);
   display: flex;
   flex-direction: column;
   gap: 14px;
@@ -72,8 +189,8 @@ button {
 }
 
 .icon-button {
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   border: none;
   border-radius: 0;
   background: transparent;
@@ -83,10 +200,29 @@ button {
   cursor: pointer;
 }
 
+/* 歯車アイコンの立体感（影）と、押した時の回転 */
+.gear {
+  display: block;
+  margin: 0 auto;
+  filter: drop-shadow(0 2px 1.5px rgba(0, 0, 0, 0.4));
+  transition: transform 0.4s ease;
+}
+
+.icon-button:hover .gear,
+.icon-button:focus-visible .gear {
+  transform: rotate(45deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gear {
+    transition: none;
+  }
+}
+
 .icon-button:hover,
 .icon-button:focus-visible {
   background: transparent;
-  color: #e0a477;
+  color: var(--link);
 }
 
 .eyebrow {
@@ -118,7 +254,7 @@ h1 {
   gap: 6px;
   font-size: 0.78rem;
   white-space: nowrap;
-  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.2);
+  box-shadow: var(--shadow-sm);
 }
 
 #googleLoginText {
@@ -134,15 +270,16 @@ h1 {
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-  background: linear-gradient(135deg, #4285f4, #34a853 40%, #fbbc05 70%, #ea4335);
-  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.6);
 }
 
+/* Google 公式の「G」ロゴ。暗い配色でも見えるように白い丸の上に置く */
 .google-mark-inner {
-  color: white;
-  font-weight: 800;
-  font-size: 11px;
-  line-height: 1;
+  width: 100%;
+  height: 100%;
+  padding: 3px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.12);
 }
 
 .summary-bar {
@@ -152,26 +289,26 @@ h1 {
 }
 
 .summary-item {
-  background: rgba(48, 32, 25, 0.96);
+  background: var(--panel);
   border: 1px solid var(--line);
   border-radius: 16px;
   padding: 12px 10px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.18);
+  box-shadow: var(--shadow-sm);
 }
 
 .summary-button {
   border: 1px solid var(--line);
-  background: rgba(48, 32, 25, 0.96);
-  color: #ffffff;
+  background: var(--panel);
+  color: var(--text);
   cursor: pointer;
 }
 
 .summary-item.accent {
-  background: rgba(113, 67, 40, 0.48);
-  border-color: rgba(190, 125, 79, 0.36);
+  background: var(--panel-accent);
+  border-color: var(--panel-accent-line);
 }
 
 .value {
@@ -196,7 +333,7 @@ h1 {
 #map {
   height: 360px;
   width: 100%;
-  background: #3a281f;
+  background: var(--map-bg);
 }
 
 .leaflet-control-attribution {
@@ -209,10 +346,10 @@ h1 {
   top: 18px;
   width: 46px;
   height: 46px;
-  border: 1px solid rgba(255, 235, 218, 0.2);
+  border: 1px solid var(--float-line);
   border-radius: 50%;
-  background: rgba(36, 25, 20, 0.94);
-  color: #fff8f1;
+  background: var(--float-bg);
+  color: var(--text);
   line-height: 1;
   display: flex;
   flex-direction: column;
@@ -220,7 +357,7 @@ h1 {
   justify-content: center;
   gap: 1px;
   padding: 0;
-  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.32);
+  box-shadow: var(--float-shadow);
   z-index: 500;
 }
 
@@ -240,7 +377,7 @@ h1 {
 
 .fab:hover,
 .fab:focus-visible {
-  background: #74452e;
+  background: var(--float-hover);
 }
 
 .locate-button {
@@ -249,23 +386,23 @@ h1 {
   bottom: 14px;
   width: 42px;
   height: 42px;
-  border: 1px solid rgba(255, 235, 218, 0.2);
+  border: 1px solid var(--float-line);
   border-radius: 50%;
-  background: rgba(36, 25, 20, 0.94);
-  color: #fff8f1;
+  background: var(--float-bg);
+  color: var(--text);
   font-size: 1.6rem;
   line-height: 1;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 0;
-  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.32);
+  box-shadow: var(--float-shadow);
   z-index: 500;
 }
 
 .locate-button:hover,
 .locate-button:focus-visible {
-  background: #74452e;
+  background: var(--float-hover);
 }
 
 .album-button {
@@ -274,23 +411,23 @@ h1 {
   top: 14px;
   width: 42px;
   height: 42px;
-  border: 1px solid rgba(255, 235, 218, 0.2);
+  border: 1px solid var(--float-line);
   border-radius: 50%;
-  background: rgba(36, 25, 20, 0.94);
-  color: #fff8f1;
+  background: var(--float-bg);
+  color: var(--text);
   font-size: 1.45rem;
   line-height: 1;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 0;
-  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.32);
+  box-shadow: var(--float-shadow);
   z-index: 500;
 }
 
 .album-button:hover,
 .album-button:focus-visible {
-  background: #74452e;
+  background: var(--float-hover);
 }
 
 .hidden-file-input {
@@ -298,11 +435,11 @@ h1 {
 }
 
 .list-panel {
-  background: rgba(36, 25, 20, 0.96);
+  background: var(--surface-glass);
   border: 1px solid var(--line);
   border-radius: var(--panel-radius);
   padding: 14px 14px 10px;
-  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.2);
+  box-shadow: var(--shadow-sm);
 }
 
 .section-header {
@@ -324,7 +461,7 @@ h1 {
 .text-button {
   border: none;
   background: transparent;
-  color: #e0a477;
+  color: var(--link);
   font-weight: 700;
   padding: 0;
 }
@@ -358,7 +495,7 @@ h1 {
   height: 84px;
   border-radius: 12px;
   object-fit: cover;
-  background: linear-gradient(135deg, #4a3023, #241712);
+  background: linear-gradient(135deg, var(--photo-a), var(--photo-b));
 }
 
 .photo-preview {
@@ -450,9 +587,9 @@ h1 {
 
 .leaflet-popup-content-wrapper,
 .leaflet-popup-tip {
-  background: rgba(43, 29, 23, 0.98);
+  background: var(--surface-glass);
   color: var(--text);
-  box-shadow: 0 18px 28px rgba(0, 0, 0, 0.36);
+  box-shadow: var(--shadow);
 }
 
 .record-popup {
@@ -499,9 +636,9 @@ h1 {
   bottom: 0;
   transform: translateX(-50%);
   width: min(100%, 460px);
-  background: rgba(36, 25, 20, 0.99);
+  background: var(--surface-glass);
   border-radius: 24px 24px 0 0;
-  box-shadow: 0 -22px 40px rgba(0, 0, 0, 0.42);
+  box-shadow: var(--sheet-shadow);
   border: 1px solid var(--line);
   z-index: 1100;
   overflow: hidden;
@@ -524,10 +661,10 @@ h1 {
 
 .record-modal-card {
   width: min(100%, 460px);
-  background: #241914;
+  background: var(--surface);
   border-radius: 24px 24px 0 0;
   padding: 16px 16px 30px;
-  box-shadow: 0 -18px 36px rgba(0, 0, 0, 0.42);
+  box-shadow: var(--sheet-shadow);
 }
 
 .settings-card {
@@ -556,10 +693,10 @@ h1 {
   width: auto;
   border: 1px solid var(--line);
   border-radius: 8px;
-  background: #17110e;
+  background: var(--input-bg);
   color: var(--text);
   padding: 7px 10px;
-  color-scheme: dark;
+  color-scheme: var(--scheme);
 }
 
 .install-section h4 {
@@ -610,7 +747,7 @@ h1 {
   padding: 10px 12px;
   border: 1px solid var(--line);
   border-radius: 12px;
-  background: #17110e;
+  background: var(--input-bg);
 }
 
 .install-guide-item strong {
@@ -654,7 +791,7 @@ h1 {
   padding: 10px 12px;
   border: 1px solid var(--line);
   border-radius: 12px;
-  background: #17110e;
+  background: var(--input-bg);
 }
 
 .settings-category-item .color-dot {
@@ -671,7 +808,7 @@ h1 {
   width: 100%;
   border: 1px solid var(--line);
   border-radius: 8px;
-  background: #241914;
+  background: var(--surface);
   color: var(--text);
   padding: 8px 10px;
   font: inherit;
@@ -683,7 +820,7 @@ h1 {
   padding: 3px;
   border: 1px solid var(--line);
   border-radius: 8px;
-  background: #17110e;
+  background: var(--input-bg);
 }
 
 .category-edit-actions {
@@ -696,7 +833,7 @@ h1 {
 .category-edit-actions button {
   border: 1px solid var(--line);
   border-radius: 8px;
-  background: #302019;
+  background: var(--panel-strong);
   color: var(--text);
   padding: 6px 10px;
   font-size: 0.72rem;
@@ -705,10 +842,12 @@ h1 {
 
 .category-edit-actions .category-edit-save {
   background: #2f9b62;
+  color: #fff;
 }
 
 .category-edit-actions .category-edit-delete {
   background: #a8443d;
+  color: #fff;
   border-color: rgba(255, 170, 160, 0.28);
 }
 
@@ -745,7 +884,7 @@ h1 {
   padding: 4px;
   border: 1px solid var(--line);
   border-radius: 10px;
-  background: #17110e;
+  background: var(--input-bg);
 }
 
 .record-modal-header {
@@ -792,9 +931,9 @@ h1 {
   width: 100%;
   border: 1px solid var(--line);
   border-radius: 12px;
-  background: #17110e;
+  background: var(--input-bg);
   color: var(--text);
-  color-scheme: dark;
+  color-scheme: var(--scheme);
   accent-color: var(--green);
   padding: 12px 14px;
   font-family: inherit;
@@ -808,9 +947,9 @@ h1 {
   padding: 12px;
   border: 1px solid rgba(190, 125, 79, 0.34);
   border-radius: 14px;
-  background: #17110e;
+  background: var(--input-bg);
   color: var(--text);
-  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.24);
+  box-shadow: var(--shadow);
 }
 
 .date-calendar.hidden {
@@ -849,7 +988,7 @@ h1 {
 .calendar-nav {
   width: 30px;
   height: 30px;
-  color: #e0a477;
+  color: var(--link);
   font-size: 1.1rem;
 }
 
@@ -906,7 +1045,7 @@ h1 {
   height: 32px;
   border: none;
   border-radius: 50%;
-  background: rgba(220, 238, 224, 0.1);
+  background: var(--close-bg);
   font-size: 1.4rem;
   line-height: 1;
   color: var(--text);
@@ -979,11 +1118,12 @@ h1 {
 }
 
 .secondary-button {
-  background: #302019;
+  background: var(--panel-strong);
 }
 
 .danger-button {
   background: #a8443d;
+  color: #fff;
   border-color: rgba(255, 170, 160, 0.28);
 }
 
@@ -1061,8 +1201,8 @@ h1 {
   }
 
   .icon-button {
-    width: 36px;
-    height: 36px;
+    width: 40px;
+    height: 40px;
   }
 
   .google-button {
