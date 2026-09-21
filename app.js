@@ -356,7 +356,7 @@ function parseDate(dateValue) {
 function formatShortDate(dateString) {
   if (!dateString) return '';
   const value = dateString.includes('/') ? dateString : dateString.replace(/-/g, '/');
-  const [year, month, day] = value.split('/').map(Number);
+  const [, month, day] = value.split('/').map(Number);
   if (!month || !day) return value;
   return `${month}/${day}`;
 }
@@ -619,7 +619,7 @@ async function readPhotoMetadata(file) {
       gps: true,
       translateValues: true,
     }) || {};
-  } catch (error) {
+  } catch {
     return {};
   }
 }
@@ -797,7 +797,7 @@ async function fetchDriveUserAvatar() {
     const data = await response.json();
     driveUserAvatarUrl = data.picture || null;
     driveUserEmail = data.email || null;
-  } catch (error) {
+  } catch {
     driveUserAvatarUrl = null;
     driveUserEmail = null;
   }
@@ -816,7 +816,7 @@ function storeDriveAccessToken(accessToken, expiresInSeconds) {
       accessToken,
       expiresAt: Date.now() + expiresInMs,
     }));
-  } catch (error) {
+  } catch {
     // Ignore storage failures (e.g. private browsing quota); the token still works in memory.
   }
 }
@@ -829,7 +829,7 @@ function getStoredDriveAccessToken() {
     if (!parsed.accessToken || !Number.isFinite(parsed.expiresAt)) return null;
     if (parsed.expiresAt <= Date.now() + 30000) return null;
     return parsed.accessToken;
-  } catch (error) {
+  } catch {
     return null;
   }
 }
@@ -873,7 +873,7 @@ async function driveFetch(path, options = {}, allowRetry = true) {
   const response = await fetch(path, {
     ...options,
     headers: {
-      ...(options.headers || {}),
+      ...options.headers,
       Authorization: `Bearer ${driveAccessToken}`,
     },
   });
@@ -969,7 +969,7 @@ async function hydrateRecordImage(record) {
     const url = URL.createObjectURL(blob);
     driveImageUrlCache.set(record.photoFileId, url);
     record.image = url;
-  } catch (error) {
+  } catch {
     // Keep whatever placeholder image the record already had.
   }
 }
@@ -1021,7 +1021,7 @@ async function connectToDrive(promptOverride = null) {
     updateLoginState();
     await loadRecordsFromDrive();
     return true;
-  } catch (error) {
+  } catch {
     isGoogleLoggedIn = false;
     localStorage.removeItem(DRIVE_SESSION_KEY);
     clearStoredDriveAccessToken();
@@ -1104,7 +1104,7 @@ async function restoreDriveSession() {
     await fetchDriveUserAvatar();
     updateLoginState();
     await loadRecordsFromDrive();
-  } catch (error) {
+  } catch {
     isGoogleLoggedIn = false;
     driveAccessToken = null;
     localStorage.removeItem(DRIVE_SESSION_KEY);
@@ -1186,7 +1186,7 @@ async function saveRecordToDrive(event) {
     closeRecordModalView();
     openDetail(record);
     window.alert(`${t('savedAlert')}\n${dataFileName}`);
-  } catch (error) {
+  } catch {
     window.alert(t('saveFailedAlert'));
   } finally {
     saveRecordButton.disabled = false;
@@ -1242,7 +1242,7 @@ function loadThemePreference() {
   try {
     const saved = localStorage.getItem('cleanlog-theme');
     return saved === 'light' || saved === 'dark' ? saved : 'auto';
-  } catch (error) {
+  } catch {
     return 'auto';
   }
 }
@@ -1253,7 +1253,7 @@ themeSelect.addEventListener('change', () => {
   try {
     if (preference === 'auto') localStorage.removeItem('cleanlog-theme');
     else localStorage.setItem('cleanlog-theme', preference);
-  } catch (error) {
+  } catch {
     // 保存できなくても、その回の表示は切り替わる
   }
   window.cleanlogApplyTheme(preference);
@@ -1354,13 +1354,14 @@ async function updateDetailRecord() {
 
   if (isGoogleLoggedIn && activeDetailRecord.dataFileId) {
     try {
+      // image と dataFileName は、ファイルに保存する内容から除くために取り出している
       const { image, dataFileId, dataFileName, ...persisted } = activeDetailRecord;
       await updateDriveFileContent(
         dataFileId,
         new Blob([JSON.stringify(persisted)], { type: 'application/json' }),
         'application/json',
       );
-    } catch (error) {
+    } catch {
       window.alert(t('updateFailedAlert'));
     }
   }
@@ -1386,7 +1387,7 @@ async function deleteDetailRecord() {
     try {
       await trashDriveFile(recordToDelete.dataFileId);
       await trashDriveFile(recordToDelete.photoFileId);
-    } catch (error) {
+    } catch {
       window.alert(t('deleteFailedAlert'));
     }
   }
@@ -1568,7 +1569,6 @@ function renderRecords() {
 }
 
 function buildPopupContent(record) {
-  const category = categoryMap[record.category];
   return `
     <div class="record-popup">
       <img src="${getRecordImageSrc(record)}" alt="${record.title}" />
