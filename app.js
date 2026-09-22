@@ -159,7 +159,7 @@ const dateRange = {
 
 const translations = {
   ja: {
-    appTagline: 'ゴミ拾い記録帳', settings: '設定', login: 'ログイン', connected: 'Google接続中',
+    appTagline: 'ゴミ拾い記録帳', settings: '設定', login: 'ログイン', connected: 'Google\n接続中',
     recordPeriod: '記録期間', periodCount: '期間/地図中の数', density: 'ごみ密度 (個/km²)',
     map: 'ごみ分布マップ', addRecord: '新しい記録を追加', capture: '撮影', categories: 'ごみの種類',
     recent: '最近の記録', periodFilter: '期間指定', details: '記録詳細', close: '閉じる',
@@ -190,7 +190,7 @@ const translations = {
     weekdays: ['日', '月', '火', '水', '木', '金', '土'],
   },
   en: {
-    appTagline: 'Clean-up Logbook', settings: 'Settings', login: 'Log in', connected: 'Google connected',
+    appTagline: 'Clean-up Logbook', settings: 'Settings', login: 'Log in', connected: 'Google\nConnected',
     recordPeriod: 'Record period', periodCount: 'Records in period & map view', density: 'Waste density (items/km²)',
     map: 'Waste distribution map', addRecord: 'Add new record', capture: 'Capture', categories: 'Waste types', all: 'Show all',
     recent: 'Recent records', periodFilter: 'Filter by period', details: 'Record details', close: 'Close',
@@ -284,6 +284,7 @@ function applyTranslations() {
   settingsButton.title = t('settings');
   dateRangeButton.setAttribute('aria-label', t('selectPeriod'));
   googleLoginText.textContent = isGoogleLoggedIn ? t('connected') : t('login');
+  googleLoginText.classList.toggle('connected', isGoogleLoggedIn);
   document.querySelector('#accountModalTitle').textContent = t('account');
   closeAccountModal.setAttribute('aria-label', t('close'));
   switchAccountButton.textContent = t('switchAccount');
@@ -778,6 +779,7 @@ function closeRecordModalView() {
 
 function updateLoginState() {
   googleLoginText.textContent = isGoogleLoggedIn ? t('connected') : t('login');
+  googleLoginText.classList.toggle('connected', isGoogleLoggedIn);
   googleLoginButton.style.opacity = isGoogleLoggedIn ? '1' : '0.96';
 
   if (isGoogleLoggedIn && driveUserAvatarUrl) {
@@ -1011,6 +1013,7 @@ async function connectToDrive(promptOverride = null) {
   }
 
   googleLoginText.textContent = t('connecting');
+  googleLoginText.classList.remove('connected');
 
   try {
     await getDriveAccessToken(true, promptOverride);

@@ -19,7 +19,10 @@
     />
     <link rel="stylesheet" href="styles.css" />
     <link rel="manifest" href="manifest.json" />
+    <link rel="icon" href="icons/favicon.ico" sizes="48x48" />
+    <link rel="icon" type="image/svg+xml" href="icons/favicon.svg" sizes="any" />
     <link rel="icon" type="image/png" sizes="32x32" href="icons/icon-32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="icons/icon-16.png" />
     <link rel="apple-touch-icon" href="icons/icon-180.png" />
     <meta name="theme-color" content="#17110e" />
     <script>
@@ -49,9 +52,12 @@
   <body>
     <div class="app-shell">
       <header class="topbar">
-        <div>
-          <p class="eyebrow">ゴミ拾い記録帳</p>
-          <h1>CleanLog</h1>
+        <div class="brand">
+          <img class="brand-logo" src="icons/favicon.svg" alt="" />
+          <div class="brand-text">
+            <p class="eyebrow">ゴミ拾い記録帳</p>
+            <h1>CleanLog</h1>
+          </div>
         </div>
         <div class="topbar-actions">
           <button id="settingsButton" class="icon-button" type="button" aria-label="設定を開く" title="設定">

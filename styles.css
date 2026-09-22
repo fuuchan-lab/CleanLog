@@ -233,6 +233,24 @@ button {
   text-transform: uppercase;
 }
 
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+/* アプリのロゴ。アプリ説明と名前の2行のかたまりの左に置く */
+.brand-logo {
+  flex: none;
+  width: 56px;
+  height: 56px;
+}
+
+.brand-text {
+  min-width: 0;
+}
+
 h1 {
   min-width: 0;
   white-space: nowrap;
@@ -261,6 +279,13 @@ h1 {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+/* 接続中は、「Google」と「接続中」を2行の小さい文字にする */
+#googleLoginText.connected {
+  white-space: pre-line;
+  font-size: 0.64rem;
+  line-height: 1.2;
 }
 
 .google-mark {
