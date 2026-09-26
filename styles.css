@@ -1450,3 +1450,15 @@ h1 {
   color: var(--muted);
   font-size: 0.78rem;
 }
+
+/* 画面の下の広告（ads.js に AdSense の ID を入れた時だけ表示される） */
+.ad-banner {
+  margin-top: auto;
+  min-height: 50px;
+  text-align: center;
+  overflow: hidden;
+}
+
+.ad-banner ins {
+  display: block;
+}
