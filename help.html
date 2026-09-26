@@ -1,0 +1,414 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ヘルプ / Help — CleanLog</title>
+    <link rel="icon" href="./icons/favicon.ico" sizes="48x48" />
+    <style>
+      :root {
+        --bg: #f6ece2;
+        --card: #fffaf5;
+        --text: #2f2118;
+        --muted: #7a6455;
+        --border: #e6d5c4;
+        --accent: #a86b43;
+        --tip-bg: #ecfdf5;
+        --tip-text: #065f46;
+        --note-bg: #fef9c3;
+        --note-text: #854d0e;
+        color-scheme: light dark;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root:not([data-theme='light']) {
+          --bg: #17110e;
+        --card: #241a15;
+        --text: #f3e8de;
+        --muted: #b29d8d;
+        --border: #3b2d25;
+        --accent: #e0b08a;
+          --tip-bg: #052e16;
+          --tip-text: #a7f3d0;
+          --note-bg: #422006;
+          --note-text: #fde68a;
+        }
+      }
+      :root[data-theme='dark'] {
+        --bg: #17110e;
+        --card: #241a15;
+        --text: #f3e8de;
+        --muted: #b29d8d;
+        --border: #3b2d25;
+        --accent: #e0b08a;
+        --tip-bg: #052e16;
+        --tip-text: #a7f3d0;
+        --note-bg: #422006;
+        --note-text: #fde68a;
+      }
+      :root[data-theme='light'] { color-scheme: light; }
+      :root[data-theme='dark'] { color-scheme: dark; }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font-family: system-ui, -apple-system, 'Segoe UI', 'Hiragino Sans', 'Noto Sans JP', sans-serif;
+        line-height: 1.75;
+        overflow-wrap: anywhere;
+      }
+      main { max-width: 760px; margin: 0 auto; padding: 20px 16px 64px; }
+      /* 右上の「戻る」ボタン。スクロールしても、いつでも押せるように上に留める */
+      .topbar {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        display: flex;
+        justify-content: flex-end;
+        margin: -20px -16px 4px;
+        padding: 10px 16px;
+        background: var(--bg);
+      }
+      .back-button {
+        font: inherit;
+        font-weight: 700;
+        min-height: 40px;
+        padding: 0 20px;
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        background: var(--card);
+        color: var(--accent);
+        cursor: pointer;
+        touch-action: manipulation;
+      }
+      .back-button:hover { border-color: var(--accent); }
+      .back-button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+      header { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+      header img { width: 56px; height: 56px; border-radius: 14px; }
+      h1 { font-size: 1.5rem; margin: 0; line-height: 1.3; }
+      .lang-switch { margin: 8px 0 16px; font-size: 0.95rem; }
+      .lang-switch a { color: var(--accent); }
+      nav.toc, section {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        padding: 6px 18px 14px;
+        margin-bottom: 16px;
+      }
+      nav.toc ol { padding-left: 1.4em; margin: 6px 0; }
+      nav.toc a, section a { color: var(--accent); }
+      h2 { font-size: 1.2rem; margin: 14px 0 6px; }
+      h3 { font-size: 1rem; margin: 14px 0 4px; }
+      p, li { margin: 4px 0; }
+      ul, ol { padding-left: 1.4em; }
+      .tip, .note { border-radius: 10px; padding: 8px 12px; margin: 10px 0; }
+      .tip { background: var(--tip-bg); color: var(--tip-text); }
+      .note { background: var(--note-bg); color: var(--note-text); }
+      kbd {
+        display: inline-block;
+        padding: 0 6px;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        background: var(--bg);
+        font: inherit;
+        font-size: 0.9em;
+        white-space: nowrap;
+      }
+      /* 選んだ言語のヘルプだけを表示する（下のスクリプトで切り替える） */
+      [hidden] { display: none !important; }
+      .back { display: inline-block; margin-top: 8px; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <div class="topbar">
+        <button type="button" id="backButton" class="back-button">戻る</button>
+      </div>
+
+      <div id="ja" lang="ja">
+        <header>
+          <img src="./icons/icon-192.png" alt="" />
+          <div>
+            <div style="color: var(--muted); font-size: 0.85rem">ゴミ拾い記録帳</div>
+            <h1>CleanLog ヘルプ</h1>
+          </div>
+        </header>
+        <p class="lang-switch">English: <a href="?lang=en">Help in English</a></p>
+
+        <nav class="toc" aria-label="目次">
+          <h2>目次</h2>
+          <ol>
+            <li><a href="#ja-start">はじめに（最初の準備）</a></li>
+            <li><a href="#ja-record">記録する（撮影・アルバム）</a></li>
+            <li><a href="#ja-map">地図と一覧の見かた</a></li>
+            <li><a href="#ja-edit">記録を直す・消す</a></li>
+            <li><a href="#ja-settings">設定</a></li>
+            <li><a href="#ja-export">データのエクスポート</a></li>
+            <li><a href="#ja-team">複数人で使う（端末の管理）</a></li>
+            <li><a href="#ja-trouble">困ったとき</a></li>
+          </ol>
+        </nav>
+
+        <section id="ja-start">
+          <h2>はじめに（最初の準備）</h2>
+          <p>ゴミ拾いで見つけたごみを、写真・種類・場所と一緒に地図に残すアプリです。</p>
+          <h3>① ホーム画面に追加する</h3>
+          <p>
+            <a href="https://cleanlog.doitmyself.net/">https://cleanlog.doitmyself.net/</a> を開き、iPhone は Safari の共有ボタン →「ホーム画面に追加」、Android は Chrome のメニュー →「ホーム画面に追加」（アプリをインストール）で、アプリと同じように使えます。
+            <kbd>⚙ 設定</kbd> の下の方にある QR コードを、スマートフォンで読み取っても開けます。
+          </p>
+          <h3>② Google にログインする</h3>
+          <p>
+            右上の <kbd>ログイン</kbd> を押し、Google アカウントでログインします。確認画面では「Google ドライブのファイル…」にチェックを入れて「続行」を押してください。
+            ログインできると、ボタンの縁が<strong>緑にふわっと光ります</strong>（オンラインで使える状態）。
+          </p>
+          <div class="note">
+            ログインしないと、記録を保存できません。写真とデータは、あなたの Google ドライブの「CleanLog」フォルダーに、CleanLog-<em>ID</em>.jpg（写真）と CleanLog-<em>ID</em>.json（データ）として保存されます。
+          </div>
+        </section>
+
+        <section id="ja-record">
+          <h2>記録する（撮影・アルバム）</h2>
+          <ol>
+            <li>地図の上の <kbd>📷 撮影</kbd> を押して撮影するか、<kbd>🖼️</kbd> でアルバムの写真を選びます。</li>
+            <li>「ごみの種類」を選びます。ファイル名に「タバコ」「缶」「candy」「toy」などのことばが入っていると、種類が自動で選ばれることがあります。違っていたら選び直してください。</li>
+            <li>「撮影日時」を確認します。アルバムの写真は、写真に記録された撮影日時が入ります（無ければファイルの日時）。</li>
+            <li><kbd>Drive に保存</kbd> を押すと、写真とデータが Google ドライブに保存されます。</li>
+          </ol>
+          <h3>場所（位置情報）</h3>
+          <ul>
+            <li>アプリで撮影したときは、撮影した時点の<strong>現在地</strong>が入ります。場所が取れなかったときは <kbd>現在位置を記録</kbd> を押してください。</li>
+            <li>アルバムの写真は、<strong>写真に記録された位置</strong>が入ります。</li>
+            <li>より正確な位置が必要なときは、端末のカメラアプリで撮影してから、<kbd>🖼️</kbd> でその写真を選びます。</li>
+          </ul>
+          <div class="tip">位置情報の許可を求められたら「許可」を選んでください。許可しないと、現在地が使えません。</div>
+        </section>
+
+        <section id="ja-map">
+          <h2>地図と一覧の見かた</h2>
+          <ul>
+            <li><strong>ごみ分布マップ</strong>: 記録が、ごみの種類ごとの色のマークで表示されます。マークを押すと、写真と内容が見られます。</li>
+            <li><kbd>記録期間</kbd>: 押すと、表示する期間（開始日・終了日）を選べます。</li>
+            <li><kbd>期間/地図中の数</kbd>: 選んだ期間の中で、いま地図に見えている範囲にある記録の数です。地図を動かしたり拡大したりすると変わります。</li>
+            <li><kbd>ごみ密度（個/km²）</kbd>: 地図に見えている範囲の面積あたりの、記録の数です。</li>
+            <li>地図の現在地ボタンで、いまいる場所に地図を動かせます。</li>
+            <li>下の「最近の記録」の一覧に、選んだ期間の記録が並びます。押すと詳細が開きます。</li>
+          </ul>
+        </section>
+
+        <section id="ja-edit">
+          <h2>記録を直す・消す</h2>
+          <ul>
+            <li>地図のマークまたは一覧の記録を押して、詳細を開きます。</li>
+            <li><kbd>編集</kbd> で、種類・日時・場所（<kbd>現在位置を記録</kbd>）を直せます。直したら <kbd>更新</kbd> を押します。</li>
+            <li><kbd>削除</kbd> で、その記録を消します。Google ドライブの写真とデータも削除されます。</li>
+          </ul>
+        </section>
+
+        <section id="ja-settings">
+          <h2>設定</h2>
+          <p>右上の <kbd>⚙</kbd> から開きます。</p>
+          <ul>
+            <li><strong>言語 / Language</strong>: 日本語と English を切り替えます。</li>
+            <li><strong>画面の配色</strong>: 自動（端末の設定に合わせる）・ライト・ダーク。</li>
+            <li><strong>ごみの種類</strong>: 種類の名前・色の変更、削除、新しい種類の追加ができます（初めは タバコ、缶・瓶、生ごみ、おもちゃ、花火、食べかす、飴・ガム）。</li>
+            <li><strong>データのエクスポート</strong>・<strong>登録済みの端末</strong>: 下の各項目を見てください。</li>
+          </ul>
+          <div class="note">種類の追加・変更は、いまのところ、アプリを開いている間だけ有効です。アプリを開き直すと、最初の種類に戻ります。</div>
+        </section>
+
+        <section id="ja-export">
+          <h2>データのエクスポート</h2>
+          <p><kbd>⚙ 設定</kbd> →「データのエクスポート」で、記録を Excel・写真・データ（JSON）にまとめて書き出せます。</p>
+          <ul>
+            <li><kbd>Google Drive に保存</kbd>: ドライブの「CleanLog」フォルダーの中に、書き出しごとのフォルダー（CleanLog_日付-時刻）を作って保存します。</li>
+            <li><kbd>この端末にダウンロード（ZIP）</kbd>: 同じ内容を ZIP 1つにまとめて、この端末に保存します。</li>
+            <li>Excel には「記録」（日付・時刻・種類・タイトル・場所・緯度・経度・写真ファイル）と、「種類別」の件数の2つのシートが入ります。</li>
+            <li>ログインしていて、記録が1件以上あるときに使えます。</li>
+          </ul>
+        </section>
+
+        <section id="ja-team">
+          <h2>複数人で使う（端末の管理）</h2>
+          <ul>
+            <li>同じ Google アカウントでログインした端末（<strong>最大20台</strong>）の記録は、ドライブの「CleanLog」フォルダーに集約されます。</li>
+            <li>20台を超えると、新しい端末では記録を表示・保存できません。<kbd>⚙ 設定</kbd> →「登録済みの端末」で <kbd>一覧を表示</kbd> を押し、使わなくなった端末を <kbd>解除</kbd> してください。解除した端末が保存した記録は残ります。</li>
+            <li>解除して枠が空くと、上限で止まっていた端末は、その場で登録され、記録が表示されます。</li>
+          </ul>
+        </section>
+
+        <section id="ja-trouble">
+          <h2>困ったとき</h2>
+          <h3>保存できない・記録が出てこない</h3>
+          <ul>
+            <li>通信状況と、ログインしているかを確認します。ログインが切れているときは、もう一度ログインしてください。</li>
+            <li>端末の上限（20台）に達していないか、「登録済みの端末」で確認します。</li>
+          </ul>
+          <h3>場所が取れない</h3>
+          <ul>
+            <li>ブラウザの位置情報を「許可」にします（iPhone は「設定」→ Safari →「位置情報」）。</li>
+            <li>建物の中では取れにくいので、外に出て <kbd>現在位置を記録</kbd> を押します。</li>
+          </ul>
+        </section>
+        <a class="back" href="./">← アプリに戻る</a>
+      </div>
+
+      <div id="en" class="en" lang="en">
+        <header>
+          <img src="./icons/icon-192.png" alt="" />
+          <div>
+            <div style="color: var(--muted); font-size: 0.85rem">Clean-up Logbook</div>
+            <h1>CleanLog Help</h1>
+          </div>
+        </header>
+        <p class="lang-switch">日本語: <a href="?lang=ja">日本語のヘルプ</a></p>
+
+        <nav class="toc" aria-label="Contents">
+          <h2>Contents</h2>
+          <ol>
+            <li><a href="#en-start">Getting started</a></li>
+            <li><a href="#en-record">Recording (camera / album)</a></li>
+            <li><a href="#en-map">Reading the map and list</a></li>
+            <li><a href="#en-edit">Editing and deleting</a></li>
+            <li><a href="#en-settings">Settings</a></li>
+            <li><a href="#en-export">Exporting your data</a></li>
+            <li><a href="#en-team">Working as a team (devices)</a></li>
+            <li><a href="#en-trouble">Troubleshooting</a></li>
+          </ol>
+        </nav>
+
+        <section id="en-start">
+          <h2>Getting started</h2>
+          <p>Keep the waste you find while cleaning up on a map together with a photo, a type and a place.</p>
+          <h3>1. Add it to your home screen</h3>
+          <p>
+            Open <a href="https://cleanlog.doitmyself.net/">https://cleanlog.doitmyself.net/</a>. On iPhone use Safari's Share button → "Add to Home Screen"; on Android use Chrome's menu → "Add to Home screen" (Install app). You can also scan the QR code near the bottom of <kbd>⚙ Settings</kbd>.
+          </p>
+          <h3>2. Log in with Google</h3>
+          <p>
+            Tap <kbd>Log in</kbd> at the top right and sign in with your Google account. On the consent screen, check "Google Drive files…" and tap Continue. When you are logged in and online, the button's border glows green.
+          </p>
+          <div class="note">
+            You cannot save records without logging in. Photos and data are saved in the "CleanLog" folder in your Google Drive as CleanLog-<em>ID</em>.jpg (photo) and CleanLog-<em>ID</em>.json (data).
+          </div>
+        </section>
+
+        <section id="en-record">
+          <h2>Recording (camera / album)</h2>
+          <ol>
+            <li>Tap <kbd>📷 Capture</kbd> above the map to take a photo, or <kbd>🖼️</kbd> to choose one from your album.</li>
+            <li>Choose a type ("Waste types"). If the file name contains a word such as "tobacco", "can", "candy", the type may be picked automatically. Change it if it is wrong.</li>
+            <li>Check the "Captured at" date and time. For album photos, the time recorded in the photo is used (or the file's date if there is none).</li>
+            <li>Tap <kbd>Save to Drive</kbd> to save the photo and data to Google Drive.</li>
+          </ol>
+          <h3>Location</h3>
+          <ul>
+            <li>When you capture in the app, your <strong>current location</strong> at that moment is used. If it could not be found, tap <kbd>Record current location</kbd>.</li>
+            <li>For album photos, the <strong>location stored in the photo</strong> is used.</li>
+            <li>If you need a more accurate location, take the photo with your device's camera app first, then choose it with <kbd>🖼️</kbd>.</li>
+          </ul>
+          <div class="tip">When asked for permission to use your location, choose "Allow". Without it, your current location cannot be used.</div>
+        </section>
+
+        <section id="en-map">
+          <h2>Reading the map and list</h2>
+          <ul>
+            <li><strong>Waste distribution map</strong>: records appear as marks colored by type. Tap a mark to see the photo and details.</li>
+            <li><kbd>Record period</kbd>: tap it to choose the period (start and end date) to show.</li>
+            <li><kbd>Records in period &amp; map view</kbd>: the number of records in the chosen period that are inside the part of the map you are looking at. It changes as you move or zoom the map.</li>
+            <li><kbd>Waste density (items/km²)</kbd>: the number of records per area of the visible map.</li>
+            <li>The locate button on the map moves the map to where you are.</li>
+            <li>The list at the bottom shows the records of the chosen period. Tap one to open its details.</li>
+          </ul>
+        </section>
+
+        <section id="en-edit">
+          <h2>Editing and deleting</h2>
+          <ul>
+            <li>Tap a mark on the map or a record in the list to open its details.</li>
+            <li><kbd>Edit</kbd> lets you change the type, date/time and place (<kbd>Record current location</kbd>). Tap <kbd>Update</kbd> when done.</li>
+            <li><kbd>Delete</kbd> removes the record. The photo and data in Google Drive are deleted too.</li>
+          </ul>
+        </section>
+
+        <section id="en-settings">
+          <h2>Settings</h2>
+          <p>Open it with <kbd>⚙</kbd> at the top right.</p>
+          <ul>
+            <li><strong>Language</strong>: switch between 日本語 and English.</li>
+            <li><strong>Appearance</strong>: Auto (follow device), Light or Dark.</li>
+            <li><strong>Waste types</strong>: rename, recolor or delete types, and add new ones (to start with: Cigarettes, Cans & Bottles, Food Waste, Toys, Fireworks, Food Scraps, Candy & Gum).</li>
+            <li><strong>Export data</strong> and <strong>Registered devices</strong>: see the sections below.</li>
+          </ul>
+          <div class="note">Changes to the types are kept only while the app is open for now. When you reopen the app, the original types come back.</div>
+        </section>
+
+        <section id="en-export">
+          <h2>Exporting your data</h2>
+          <p><kbd>⚙ Settings</kbd> → "Export data" bundles your records as an Excel file, photos and data (JSON).</p>
+          <ul>
+            <li><kbd>Save to Google Drive</kbd>: creates a folder per export (CleanLog_date-time) inside the "CleanLog" folder in Drive.</li>
+            <li><kbd>Download to this device (ZIP)</kbd>: saves the same content as one ZIP file on this device.</li>
+            <li>The Excel file has two sheets: "Records" (date, time, type, title, place, latitude, longitude, photo file) and "By type" (counts).</li>
+            <li>Available while you are logged in and have at least one record.</li>
+          </ul>
+        </section>
+
+        <section id="en-team">
+          <h2>Working as a team (devices)</h2>
+          <ul>
+            <li>Records from every device logged in to the same Google account (up to <strong>20 devices</strong>) are combined in the "CleanLog" folder in Drive.</li>
+            <li>Beyond 20 devices, a new device cannot show or save records. Open <kbd>⚙ Settings</kbd> → "Registered devices", tap <kbd>Show list</kbd> and <kbd>Remove</kbd> devices that are no longer used. Records they saved are kept.</li>
+            <li>When a slot is freed, a device that was stopped by the limit registers right away and its records appear.</li>
+          </ul>
+        </section>
+
+        <section id="en-trouble">
+          <h2>Troubleshooting</h2>
+          <h3>Cannot save / no records appear</h3>
+          <ul>
+            <li>Check your connection and that you are logged in. If you were logged out, log in again.</li>
+            <li>Check in "Registered devices" that the limit of 20 devices has not been reached.</li>
+          </ul>
+          <h3>The location cannot be found</h3>
+          <ul>
+            <li>Allow location access in your browser (iPhone: Settings → Safari → Location).</li>
+            <li>It is hard to get inside buildings. Go outside and tap <kbd>Record current location</kbd>.</li>
+          </ul>
+        </section>
+        <a class="back" href="./">← Back to the app</a>
+      </div>
+    </main>
+    <script>
+      // アプリの配色（設定で選んだライト／ダーク）を反映する。「自動」のときは、端末の設定に合わせる
+      ;(function () {
+        try {
+          var pref = localStorage.getItem('cleanlog-theme')
+          if (pref === 'light' || pref === 'dark') document.documentElement.setAttribute('data-theme', pref)
+        } catch (e) {}
+      })()
+      // アプリの言語（?lang=ja / ?lang=en）のヘルプだけを表示する。指定が無ければ、アプリで選んだ言語、端末の言語の順で決める
+      ;(function () {
+        var param = new URLSearchParams(location.search).get('lang')
+        var hash = location.hash.replace('#', '')
+        var saved = null
+        try { saved = localStorage.getItem('cleanlog-language') } catch (e) {}
+        var lang = param === 'en' || param === 'ja' ? param : hash === 'en' || hash === 'ja' ? hash : saved === 'en' || saved === 'ja' ? saved : null
+        if (!lang) lang = (navigator.language || '').toLowerCase().indexOf('ja') === 0 ? 'ja' : 'en'
+        document.getElementById(lang === 'en' ? 'ja' : 'en').hidden = true
+        document.documentElement.lang = lang
+        document.title = lang === 'en' ? 'Help — CleanLog' : 'ヘルプ — CleanLog'
+
+        // 右上の「戻る」。別のタブで開いている時は、そのタブを閉じて元のアプリの画面に戻る。
+        // タブを閉じられない時（同じタブで開いた時・iPhone など）は、アプリの画面に移る
+        var back = document.getElementById('backButton')
+        back.textContent = lang === 'en' ? 'Back' : '戻る'
+        back.addEventListener('click', function () {
+          window.close()
+          setTimeout(function () {
+            location.href = './'
+          }, 250)
+        })
+      })()
+    </script>
+  </body>
+</html>

@@ -121,6 +121,11 @@ const exportDriveButton = document.getElementById('exportDriveButton');
 const exportDeviceButton = document.getElementById('exportDeviceButton');
 const exportNote = document.getElementById('exportNote');
 const exportStatus = document.getElementById('exportStatus');
+const devicesLoadButton = document.getElementById('devicesLoadButton');
+const devicesCount = document.getElementById('devicesCount');
+const devicesList = document.getElementById('devicesList');
+const devicesNote = document.getElementById('devicesNote');
+const devicesStatus = document.getElementById('devicesStatus');
 const dateRangeButton = document.getElementById('dateRangeButton');
 const dateRangeValue = document.getElementById('dateRangeValue');
 const rangeCountValue = document.getElementById('rangeCountValue');
@@ -156,6 +161,9 @@ let selectedPhotoSource = 'camera';
 let activeDetailRecord = null;
 let pendingDetailLocation = null;
 let isExporting = false;
+let isDeviceLimited = false;
+let devicesLoaded = false;
+let lastDevices = [];
 
 const dateRange = {
   start: '',
@@ -198,6 +206,16 @@ const translations = {
     exportNeedLogin: 'Google にログインすると使えます（右上の「ログイン」）。', exportNoRecords: '書き出す記録がまだありません。',
     exportDone: '保存しました: ', exportOpen: 'Google Drive で開く',
     exportFailed: '書き出せませんでした。通信状況とログイン状態を確認して、もう一度お試しください。',
+    devicesTitle: '登録済みの端末（最大{max}台）',
+    devicesHelp: 'この共有アカウントで使っている端末です。使わなくなった端末を解除すると、新しい端末を登録できます（解除した端末が保存した記録は残ります）。',
+    devicesLoad: '一覧を表示', devicesLoading: '読み込み中…', devicesCount: '{n} / {max} 台',
+    devicesThis: 'この端末', devicesOver: '上限外', devicesRegistered: '登録: {time}', devicesRemove: '解除',
+    devicesConfirmRemove: '「{name}」の登録を解除しますか？（その端末は、枠が空いていれば次にログインした時に再び登録されます）',
+    devicesNeedLogin: 'ログインすると表示できます。', devicesFailed: '読み込めませんでした。通信状況を確認してください。',
+    deviceLimitAlert: 'この共有アカウントで使える端末（{max}台）に達しているため、この端末では記録の表示・保存ができません。使っていない端末を、設定の「登録済みの端末」で解除してください。',
+    deviceLimitNote: '端末の上限（{max}台）に達しているため、この端末では記録の表示・保存ができません。下の一覧で使っていない端末を解除してください。',
+    accountShared: '同じアカウントでログインした端末（最大{max}台）の記録は、このフォルダーに集約されます。',
+    helpTitle: '使い方（ヘルプ）', helpSubtitle: '撮影・地図・エクスポート・端末の管理などの説明',
     weekdays: ['日', '月', '火', '水', '木', '金', '土'],
   },
   en: {
@@ -236,6 +254,16 @@ const translations = {
     exportNeedLogin: 'Log in with Google to use this (the "Log in" button at the top right).', exportNoRecords: 'There are no records to export yet.',
     exportDone: 'Saved: ', exportOpen: 'Open in Google Drive',
     exportFailed: 'Export failed. Check your connection and login status, then try again.',
+    devicesTitle: 'Registered devices (max {max})',
+    devicesHelp: 'Devices using this shared account. Remove devices that are no longer used so new ones can register (records they saved are kept).',
+    devicesLoad: 'Show list', devicesLoading: 'Loading…', devicesCount: '{n} / {max} devices',
+    devicesThis: 'This device', devicesOver: 'Over limit', devicesRegistered: 'Registered {time}', devicesRemove: 'Remove',
+    devicesConfirmRemove: 'Remove "{name}"? (If a slot is free, that device registers again the next time it logs in.)',
+    devicesNeedLogin: 'Log in to see the list.', devicesFailed: 'Could not load. Check your connection.',
+    deviceLimitAlert: 'This shared account has reached its limit of {max} devices, so this device cannot show or save records. Remove an unused device in Settings → Registered devices.',
+    deviceLimitNote: 'The limit of {max} devices has been reached, so this device cannot show or save records. Remove an unused device from the list below.',
+    accountShared: 'Records from every device logged in to this account (up to {max}) are combined in this folder.',
+    helpTitle: 'How to use (Help)', helpSubtitle: 'Recording, the map, export and device management',
     weekdays: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
   },
 };
@@ -351,6 +379,13 @@ function applyTranslations() {
   document.querySelector('#exportHelp').textContent = t('exportHelp');
   exportDeviceButton.textContent = t('exportDevice');
   updateExportControls();
+  document.querySelector('#devicesSettingsTitle').textContent = fillIn(t('devicesTitle'), { max: window.LogDevices.MAX_DEVICES });
+  document.querySelector('#devicesHelp').textContent = t('devicesHelp');
+  document.querySelector('#accountSharedNote').textContent = fillIn(t('accountShared'), { max: window.LogDevices.MAX_DEVICES });
+  document.querySelector('#helpCard').href = `help.html?lang=${currentLanguage}`;
+  document.querySelector('#helpCardTitle').textContent = t('helpTitle');
+  document.querySelector('#helpCardSub').textContent = t('helpSubtitle');
+  updateDeviceControls();
   document.querySelector('#installSettingsTitle').textContent = t('installTitle');
   document.querySelector('#installDescription').textContent = t('installDescription');
   document.querySelector('#installQrCode').alt = t('qrAlt');
@@ -770,6 +805,11 @@ async function openRecordModal(source = 'camera') {
     return;
   }
 
+  if (isDeviceLimited) {
+    window.alert(fillIn(t('deviceLimitAlert'), { max: window.LogDevices.MAX_DEVICES }));
+    return;
+  }
+
   recordModal.classList.remove('hidden');
   recordForm.reset();
   photoPreview.removeAttribute('src');
@@ -1012,7 +1052,8 @@ async function loadRecordsFromDrive() {
     `https://www.googleapis.com/drive/v3/files?q=${query}&fields=files(id,name)&orderBy=name desc&spaces=drive`,
   );
   const listData = await listResponse.json();
-  const files = listData.files || [];
+  // 端末の登録ファイル（device-*.json）は記録ではないので、読み込まない
+  const files = (listData.files || []).filter((file) => !window.LogDevices.DEVICE_FILE_RE.test(file.name));
 
   const loadedRecords = await Promise.all(
     files.map(async (file) => {
@@ -1053,7 +1094,7 @@ async function connectToDrive(promptOverride = null) {
     localStorage.setItem(DRIVE_SESSION_KEY, '1');
     await fetchDriveUserAvatar();
     updateLoginState();
-    await loadRecordsFromDrive();
+    await registerDeviceAndLoad();
     return true;
   } catch {
     isGoogleLoggedIn = false;
@@ -1084,6 +1125,8 @@ async function signOutOfDrive() {
   driveFolderId = null;
   driveUserAvatarUrl = null;
   driveUserEmail = null;
+  isDeviceLimited = false;
+  devicesLoaded = false;
   driveImageUrlCache.clear();
   localStorage.removeItem(DRIVE_SESSION_KEY);
   clearStoredDriveAccessToken();
@@ -1137,7 +1180,7 @@ async function restoreDriveSession() {
     isGoogleLoggedIn = true;
     await fetchDriveUserAvatar();
     updateLoginState();
-    await loadRecordsFromDrive();
+    await registerDeviceAndLoad();
   } catch {
     isGoogleLoggedIn = false;
     driveAccessToken = null;
@@ -1152,6 +1195,11 @@ async function saveRecordToDrive(event) {
 
   if (!isGoogleLoggedIn) {
     window.alert(t('signInFirstAlert'));
+    return;
+  }
+
+  if (isDeviceLimited) {
+    window.alert(fillIn(t('deviceLimitAlert'), { max: window.LogDevices.MAX_DEVICES }));
     return;
   }
 
@@ -1534,6 +1582,168 @@ function renderSettingsCategories() {
   });
 }
 
+// ---- Device management: up to 20 devices per shared account (same as LeadLog). See devices.js ----
+
+const DEVICE_ID_KEY = 'cleanlog-device-id';
+
+/** Replaces {name} placeholders in a translated string. */
+function fillIn(text, vars) {
+  return text.replace(/\{(\w+)\}/g, (_, key) => (key in vars ? vars[key] : ''));
+}
+
+function currentDevice() {
+  return {
+    deviceId: window.LogDevices.getDeviceId(DEVICE_ID_KEY),
+    device: window.LogDevices.describeDevice(navigator.userAgent),
+  };
+}
+
+async function listDriveFolderFiles(folderId) {
+  const query = encodeURIComponent(`'${folderId}' in parents and trashed=false`);
+  const files = [];
+  let pageToken = '';
+  do {
+    const url =
+      `https://www.googleapis.com/drive/v3/files?q=${query}&fields=nextPageToken,files(id,name,modifiedTime,createdTime)` +
+      `&pageSize=1000&spaces=drive${pageToken ? `&pageToken=${encodeURIComponent(pageToken)}` : ''}`;
+    const data = await (await driveFetch(url)).json();
+    files.push(...(data.files || []));
+    pageToken = data.nextPageToken || '';
+  } while (pageToken);
+  return files;
+}
+
+const deviceApi = {
+  listFolderFiles: listDriveFolderFiles,
+  uploadFile: (blob, name, mimeType, parentId) => uploadFileToDrive(blob, name, mimeType, parentId),
+  downloadText: async (fileId) => (await driveFetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`)).text(),
+  deleteFile: (fileId) => driveFetch(`https://www.googleapis.com/drive/v3/files/${fileId}`, { method: 'DELETE' }),
+};
+
+/**
+ * Registers this device, then loads the records. When the account already has the maximum number of devices,
+ * the records are not shown or saved on this device (the settings screen can still remove unused devices).
+ */
+async function registerDeviceAndLoad() {
+  try {
+    await window.LogDevices.ensureRegistered(deviceApi, await listDriveFolderFiles(driveFolderId), driveFolderId, currentDevice());
+    isDeviceLimited = false;
+  } catch (error) {
+    if (error instanceof window.LogDevices.DeviceLimitError) {
+      isDeviceLimited = true;
+      records.length = 0;
+      renderRecords();
+      renderMarkers(activeCategoryKeys);
+      renderDateRangeSummary();
+      updateDeviceControls();
+      window.alert(fillIn(t('deviceLimitAlert'), { max: window.LogDevices.MAX_DEVICES }));
+      return;
+    }
+    // A failure other than the limit (for example a network hiccup) must not lock the user out.
+    console.error('[device-register]', error);
+  }
+  updateDeviceControls();
+  await loadRecordsFromDrive();
+}
+
+function updateDeviceControls() {
+  devicesNote.textContent = isDeviceLimited ? fillIn(t('deviceLimitNote'), { max: window.LogDevices.MAX_DEVICES }) : '';
+  devicesLoadButton.disabled = !isGoogleLoggedIn;
+  devicesLoadButton.textContent = t('devicesLoad');
+  devicesStatus.textContent = isGoogleLoggedIn ? '' : t('devicesNeedLogin');
+  devicesStatus.classList.remove('error');
+  if (isGoogleLoggedIn && devicesLoaded) {
+    // Re-draw the loaded list (for example after switching the language).
+    renderDeviceList(lastDevices);
+  } else {
+    devicesList.replaceChildren();
+    devicesCount.textContent = '';
+    devicesLoadButton.hidden = false;
+  }
+}
+
+async function loadDeviceList() {
+  devicesLoadButton.disabled = true;
+  devicesLoadButton.textContent = t('devicesLoading');
+  devicesStatus.textContent = '';
+  try {
+    const devices = await window.LogDevices.listDevices(deviceApi, driveFolderId);
+    devicesLoaded = true;
+    renderDeviceList(devices);
+  } catch (error) {
+    console.error('[devices]', error);
+    devicesLoaded = false;
+    devicesLoadButton.disabled = false;
+    devicesLoadButton.textContent = t('devicesLoad');
+    devicesStatus.textContent = t('devicesFailed');
+    devicesStatus.classList.add('error');
+  }
+}
+
+function renderDeviceList(devices) {
+  lastDevices = devices;
+  const me = window.LogDevices.getDeviceId(DEVICE_ID_KEY);
+  const max = window.LogDevices.MAX_DEVICES;
+  devicesLoadButton.hidden = true;
+  devicesCount.textContent = fillIn(t('devicesCount'), { n: devices.filter((d) => d.active).length, max });
+  devicesList.replaceChildren();
+  for (const device of devices) {
+    const name = device.device || `#${device.deviceId}`;
+    const item = document.createElement('li');
+    item.className = 'devices-item';
+
+    const info = document.createElement('div');
+    info.className = 'devices-info';
+    const title = document.createElement('div');
+    title.className = 'devices-name';
+    title.textContent = name;
+    if (device.deviceId === me) {
+      const badge = document.createElement('span');
+      badge.className = 'devices-badge';
+      badge.textContent = t('devicesThis');
+      title.append(' ', badge);
+    }
+    if (!device.active) {
+      const badge = document.createElement('span');
+      badge.className = 'devices-badge warn';
+      badge.textContent = t('devicesOver');
+      title.append(' ', badge);
+    }
+    const sub = document.createElement('div');
+    sub.className = 'devices-sub';
+    const when = new Date(device.registeredAt).toLocaleString(currentLanguage === 'ja' ? 'ja-JP' : 'en-US', {
+      month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit',
+    });
+    sub.textContent = `#${device.deviceId} · ${fillIn(t('devicesRegistered'), { time: when })}`;
+    info.append(title, sub);
+    item.append(info);
+
+    if (device.deviceId !== me) {
+      const remove = document.createElement('button');
+      remove.type = 'button';
+      remove.className = 'devices-remove';
+      remove.textContent = t('devicesRemove');
+      remove.addEventListener('click', () => removeDevice(device, name));
+      item.append(remove);
+    }
+    devicesList.append(item);
+  }
+}
+
+async function removeDevice(device, name) {
+  if (!window.confirm(fillIn(t('devicesConfirmRemove'), { name }))) return;
+  try {
+    await deviceApi.deleteFile(device.fileId);
+  } catch (error) {
+    console.error('[devices]', error);
+  }
+  // This device was over the limit: now that a slot may be free, try to register again (before redrawing the list).
+  if (isDeviceLimited && isGoogleLoggedIn) await registerDeviceAndLoad();
+  await loadDeviceList();
+}
+
+devicesLoadButton.addEventListener('click', loadDeviceList);
+
 // ---- Data export: Excel + photos + JSON (same package as LeadLog). See export.js ----
 
 function updateExportControls() {
@@ -1641,6 +1851,7 @@ exportDeviceButton.addEventListener('click', () => exportData('device'));
 function openSettings() {
   renderSettingsCategories();
   updateExportControls();
+  updateDeviceControls();
   settingsModal.classList.remove('hidden');
 }
 

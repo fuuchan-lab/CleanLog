@@ -1315,3 +1315,138 @@ h1 {
 .export-status.error {
   color: #c0453c;
 }
+
+/* 登録済みの端末（設定画面） */
+.devices-section {
+  margin-top: 16px;
+}
+
+.devices-section h4 {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.devices-help,
+.devices-count,
+.devices-status,
+.account-shared {
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 0.82rem;
+  overflow-wrap: anywhere;
+}
+
+.devices-note {
+  margin: 8px 0 0;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: rgba(192, 69, 60, 0.14);
+  color: #c0453c;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.devices-note:empty,
+.devices-status:empty,
+.devices-count:empty,
+.account-shared:empty {
+  display: none;
+}
+
+.devices-section .secondary-button {
+  margin-top: 10px;
+  width: 100%;
+}
+
+.devices-list {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+}
+
+.devices-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 0;
+  border-top: 1px solid var(--line);
+}
+
+.devices-info {
+  min-width: 0;
+}
+
+.devices-name {
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.devices-sub {
+  color: var(--muted);
+  font-size: 0.75rem;
+  overflow-wrap: anywhere;
+}
+
+.devices-badge {
+  display: inline-block;
+  margin-left: 4px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--panel-strong);
+  color: var(--muted);
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.devices-badge.warn {
+  background: rgba(192, 69, 60, 0.18);
+  color: #c0453c;
+}
+
+.devices-remove {
+  flex: none;
+  padding: 6px 12px;
+  border: 1px solid #c0453c;
+  border-radius: 10px;
+  background: transparent;
+  color: #c0453c;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.devices-status.error {
+  color: #c0453c;
+}
+
+/* 設定画面の先頭の、ヘルプへのリンク */
+.help-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--panel-strong);
+  color: var(--text);
+  text-decoration: none;
+}
+
+.help-mark {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--green), var(--green-strong));
+  color: #fff;
+  font-weight: 800;
+}
+
+.help-sub {
+  color: var(--muted);
+  font-size: 0.78rem;
+}

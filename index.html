@@ -246,6 +246,7 @@
         </div>
 
         <p id="accountModalEmail" class="account-email"></p>
+        <p id="accountSharedNote" class="account-shared"></p>
 
         <div class="account-actions">
           <button id="switchAccountButton" type="button" class="secondary-button">アカウントを切り替え</button>
@@ -288,6 +289,14 @@
           </div>
           <button id="closeSettingsModal" type="button" class="close-detail" aria-label="設定を閉じる">×</button>
         </div>
+
+        <a id="helpCard" class="help-card" href="help.html" target="_blank" rel="noopener">
+          <span class="help-mark" aria-hidden="true">?</span>
+          <span>
+            <strong id="helpCardTitle">使い方（ヘルプ）</strong><br />
+            <span id="helpCardSub" class="help-sub">撮影・地図・エクスポート・端末の管理などの説明</span>
+          </span>
+        </a>
 
         <section class="settings-section language-section" aria-labelledby="languageSettingsTitle">
           <div class="section-header compact">
@@ -341,6 +350,16 @@
           <p id="exportStatus" class="export-status" role="status"></p>
         </section>
 
+        <section class="settings-section devices-section" aria-labelledby="devicesSettingsTitle">
+          <h4 id="devicesSettingsTitle">登録済みの端末（最大20台）</h4>
+          <p id="devicesHelp" class="devices-help">この共有アカウントで使っている端末です。使わなくなった端末を解除すると、新しい端末を登録できます（解除した端末が保存した記録は残ります）。</p>
+          <p id="devicesNote" class="devices-note"></p>
+          <button id="devicesLoadButton" type="button" class="secondary-button" disabled>一覧を表示</button>
+          <p id="devicesCount" class="devices-count"></p>
+          <ul id="devicesList" class="devices-list"></ul>
+          <p id="devicesStatus" class="devices-status" role="status"></p>
+        </section>
+
         <section class="settings-section install-section" aria-labelledby="installSettingsTitle">
           <h4 id="installSettingsTitle">デバイスへのインストール方法</h4>
           <p id="installDescription" class="install-description">下のQRコードをスマートフォンで読み取ってアクセスしてください。</p>
@@ -373,6 +392,7 @@
       crossorigin=""
     ></script>
     <script src="https://cdn.jsdelivr.net/npm/exifr@7.1.3/dist/lite.umd.js"></script>
+    <script src="devices.js"></script>
     <script src="export.js"></script>
     <script src="app.js"></script>
   </body>
