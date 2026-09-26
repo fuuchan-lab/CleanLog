@@ -1,0 +1,51 @@
+{
+  "packageId": "net.doitmyself.cleanlog",
+  "host": "cleanlog.doitmyself.net",
+  "name": "CleanLog",
+  "launcherName": "CleanLog",
+  "display": "standalone",
+  "themeColor": "#17110E",
+  "themeColorDark": "#17110E",
+  "navigationColor": "#17110E",
+  "navigationColorDark": "#17110E",
+  "navigationDividerColor": "#17110E",
+  "navigationDividerColorDark": "#17110E",
+  "backgroundColor": "#17110E",
+  "enableNotifications": false,
+  "startUrl": "/",
+  "iconUrl": "https://cleanlog.doitmyself.net/icons/icon-512.png",
+  "maskableIconUrl": "https://cleanlog.doitmyself.net/icons/icon-maskable-512.png",
+  "splashScreenFadeOutDuration": 300,
+  "signingKey": {
+    "path": "C:/Users/user/.bubblewrap/keys/cleanlog-upload.keystore",
+    "alias": "cleanlog"
+  },
+  "appVersionName": "1.0.0",
+  "appVersionCode": 1,
+  "shortcuts": [],
+  "generatorApp": "bubblewrap-cli",
+  "webManifestUrl": "https://cleanlog.doitmyself.net/manifest.json",
+  "fallbackType": "customtabs",
+  "features": {
+    "locationDelegation": {
+      "enabled": true
+    }
+  },
+  "alphaDependencies": {
+    "enabled": false
+  },
+  "enableSiteSettingsShortcut": true,
+  "isChromeOSOnly": false,
+  "isMetaQuest": false,
+  "fullScopeUrl": "https://cleanlog.doitmyself.net/",
+  "minSdkVersion": 21,
+  "orientation": "default",
+  "fingerprints": [],
+  "additionalTrustedOrigins": [],
+  "retainedBundles": [],
+  "protocolHandlers": [],
+  "fileHandlers": [],
+  "launchHandlerClientMode": "",
+  "displayOverride": [],
+  "appVersion": "1.0.0"
+}

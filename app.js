@@ -2224,3 +2224,8 @@ window.map = map;
 // possible instead of waiting on the network round trip for Drive first.
 centerMapOnCurrentLocationOnLoad();
 const driveSessionReadyPromise = restoreDriveSession();
+
+// Offline support (also what lets the Android app open without a connection). See sw.js
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').catch((error) => console.error('[sw]', error));
+}

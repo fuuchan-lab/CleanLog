@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "net.doitmyself.cleanlog",
+      "sha256_cert_fingerprints": [
+        "FD:2A:62:02:75:BF:73:28:68:4E:79:2E:CD:52:CB:12:F5:E6:FE:97:8E:D5:AB:88:08:A4:6C:E5:99:A2:1A:04"
+      ]
+    }
+  }
+]
