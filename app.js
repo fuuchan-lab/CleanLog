@@ -117,6 +117,10 @@ const switchAccountButton = document.getElementById('switchAccountButton');
 const signOutButton = document.getElementById('signOutButton');
 const languageSelect = document.getElementById('languageSelect');
 const themeSelect = document.getElementById('themeSelect');
+const exportDriveButton = document.getElementById('exportDriveButton');
+const exportDeviceButton = document.getElementById('exportDeviceButton');
+const exportNote = document.getElementById('exportNote');
+const exportStatus = document.getElementById('exportStatus');
 const dateRangeButton = document.getElementById('dateRangeButton');
 const dateRangeValue = document.getElementById('dateRangeValue');
 const rangeCountValue = document.getElementById('rangeCountValue');
@@ -151,6 +155,7 @@ let selectedPhotoLocation = null;
 let selectedPhotoSource = 'camera';
 let activeDetailRecord = null;
 let pendingDetailLocation = null;
+let isExporting = false;
 
 const dateRange = {
   start: '',
@@ -187,6 +192,12 @@ const translations = {
     updateFailedAlert: 'Google Driveへの更新の反映に失敗しました。',
     deleteFailedAlert: 'Google Drive上のファイル削除に失敗しました。',
     themeTitle: '画面の配色', themeAuto: '自動（端末の設定に合わせる）', themeLight: 'ライト', themeDark: 'ダーク',
+    exportTitle: 'データのエクスポート',
+    exportHelp: '記録を Excel ファイル・写真・データ（JSON）にまとめて書き出します。Google Drive の CleanLog フォルダーの中に書き出しごとのフォルダーを作って保存するか、この端末に ZIP でダウンロードできます。',
+    exportDrive: 'Google Drive に保存', exportDevice: 'この端末にダウンロード（ZIP）', exportBusy: '書き出し中…',
+    exportNeedLogin: 'Google にログインすると使えます（右上の「ログイン」）。', exportNoRecords: '書き出す記録がまだありません。',
+    exportDone: '保存しました: ', exportOpen: 'Google Drive で開く',
+    exportFailed: '書き出せませんでした。通信状況とログイン状態を確認して、もう一度お試しください。',
     weekdays: ['日', '月', '火', '水', '木', '金', '土'],
   },
   en: {
@@ -219,6 +230,12 @@ const translations = {
     updateFailedAlert: 'Failed to sync the update to Google Drive.',
     deleteFailedAlert: 'Failed to remove the file from Google Drive.',
     themeTitle: 'Appearance', themeAuto: 'Auto (follow device)', themeLight: 'Light', themeDark: 'Dark',
+    exportTitle: 'Export data',
+    exportHelp: 'Bundles your records as an Excel file, photos and data (JSON). Save it to a new folder inside the CleanLog folder in Google Drive, or download it to this device as a ZIP.',
+    exportDrive: 'Save to Google Drive', exportDevice: 'Download to this device (ZIP)', exportBusy: 'Exporting…',
+    exportNeedLogin: 'Log in with Google to use this (the "Log in" button at the top right).', exportNoRecords: 'There are no records to export yet.',
+    exportDone: 'Saved: ', exportOpen: 'Open in Google Drive',
+    exportFailed: 'Export failed. Check your connection and login status, then try again.',
     weekdays: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
   },
 };
@@ -330,6 +347,10 @@ function applyTranslations() {
   themeSelect.options[0].textContent = t('themeAuto');
   themeSelect.options[1].textContent = t('themeLight');
   themeSelect.options[2].textContent = t('themeDark');
+  document.querySelector('#exportSettingsTitle').textContent = t('exportTitle');
+  document.querySelector('#exportHelp').textContent = t('exportHelp');
+  exportDeviceButton.textContent = t('exportDevice');
+  updateExportControls();
   document.querySelector('#installSettingsTitle').textContent = t('installTitle');
   document.querySelector('#installDescription').textContent = t('installDescription');
   document.querySelector('#installQrCode').alt = t('qrAlt');
@@ -1513,8 +1534,113 @@ function renderSettingsCategories() {
   });
 }
 
+// ---- Data export: Excel + photos + JSON (same package as LeadLog). See export.js ----
+
+function updateExportControls() {
+  const canExport = isGoogleLoggedIn && records.length > 0 && !isExporting;
+  exportDriveButton.disabled = !canExport;
+  exportDeviceButton.disabled = !canExport;
+  exportDriveButton.textContent = isExporting ? t('exportBusy') : t('exportDrive');
+  exportNote.textContent = !isGoogleLoggedIn ? t('exportNeedLogin') : records.length === 0 ? t('exportNoRecords') : '';
+}
+
+async function loadRecordPhotoBlob(record) {
+  if (!record.photoFileId) return null;
+  if (record.image && record.image.startsWith('blob:')) {
+    try {
+      return await (await fetch(record.image)).blob();
+    } catch {
+      // Fall back to downloading it from Drive.
+    }
+  }
+  return (await driveFetch(`https://www.googleapis.com/drive/v3/files/${record.photoFileId}?alt=media`)).blob();
+}
+
+/** Finds a sub-folder by name inside parentId, creating it when missing. */
+async function ensureDriveSubfolder(parentId, name) {
+  const query = encodeURIComponent(
+    `name='${name}' and mimeType='application/vnd.google-apps.folder' and '${parentId}' in parents and trashed=false`,
+  );
+  const listResponse = await driveFetch(
+    `https://www.googleapis.com/drive/v3/files?q=${query}&fields=files(id)&orderBy=createdTime&spaces=drive`,
+  );
+  const listData = await listResponse.json();
+  if (listData.files && listData.files.length > 0) return listData.files[0].id;
+
+  const createResponse = await driveFetch('https://www.googleapis.com/drive/v3/files?fields=id', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name, mimeType: 'application/vnd.google-apps.folder', parents: [parentId] }),
+  });
+  return (await createResponse.json()).id;
+}
+
+function showExportStatus(message, { error = false, folderId = null } = {}) {
+  exportStatus.textContent = message;
+  exportStatus.classList.toggle('error', error);
+  if (folderId) {
+    const link = document.createElement('a');
+    link.href = `https://drive.google.com/drive/folders/${folderId}`;
+    link.target = '_blank';
+    link.rel = 'noopener noreferrer';
+    link.textContent = t('exportOpen');
+    exportStatus.append(' ', link);
+  }
+}
+
+async function exportData(to) {
+  if (isExporting || !isGoogleLoggedIn || records.length === 0) return;
+  isExporting = true;
+  showExportStatus('');
+  updateExportControls();
+  try {
+    const pkg = await window.LogExport.buildPackage({
+      appName: driveConfig.folderName,
+      lang: currentLanguage,
+      records,
+      categories,
+      categoryLabel: (key) => getCategoryLabel(categoryMap[key] || categoryMap.unclassified),
+      loadPhoto: loadRecordPhotoBlob,
+    });
+
+    if (to === 'drive') {
+      const folderId = await ensureDriveSubfolder(driveFolderId, pkg.baseName);
+      for (const file of pkg.entries) {
+        const mimeType = file.name.endsWith('.json')
+          ? 'application/json'
+          : file.name.endsWith('.xlsx')
+            ? window.LogExport.XLSX_MIME
+            : 'image/jpeg';
+        await uploadFileToDrive(new Blob([file.data]), file.name, mimeType, folderId);
+      }
+      showExportStatus(`${t('exportDone')}${pkg.baseName}`, { folderId });
+    } else {
+      const zip = await window.LogExport.createZip(pkg.entries);
+      const url = URL.createObjectURL(zip);
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.download = `${pkg.baseName}.zip`;
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 10000);
+      showExportStatus(`${t('exportDone')}${pkg.baseName}.zip`);
+    }
+  } catch (error) {
+    console.error('[export]', error);
+    showExportStatus(t('exportFailed'), { error: true });
+  } finally {
+    isExporting = false;
+    updateExportControls();
+  }
+}
+
+exportDriveButton.addEventListener('click', () => exportData('drive'));
+exportDeviceButton.addEventListener('click', () => exportData('device'));
+
 function openSettings() {
   renderSettingsCategories();
+  updateExportControls();
   settingsModal.classList.remove('hidden');
 }
 

@@ -1265,3 +1265,53 @@ h1 {
     height: 20px;
   }
 }
+
+/* データのエクスポート（設定画面） */
+.export-section {
+  margin-top: 16px;
+}
+
+.export-section h4 {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.export-help,
+.export-note,
+.export-status {
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 0.82rem;
+  overflow-wrap: anywhere;
+}
+
+.export-note:empty,
+.export-status:empty {
+  display: none;
+}
+
+.export-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.export-buttons button {
+  flex: 1 1 auto;
+  margin-top: 0;
+}
+
+.export-buttons button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.export-status a {
+  color: var(--green-strong);
+  font-weight: 700;
+}
+
+.export-status.error {
+  color: #c0453c;
+}

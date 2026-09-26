@@ -330,6 +330,17 @@
           <button type="submit" class="primary-button">種類を追加</button>
         </form>
 
+        <section class="settings-section export-section" aria-labelledby="exportSettingsTitle">
+          <h4 id="exportSettingsTitle">データのエクスポート</h4>
+          <p id="exportHelp" class="export-help">記録を Excel ファイル・写真・データ（JSON）にまとめて書き出します。Google Drive の CleanLog フォルダーの中に書き出しごとのフォルダーを作って保存するか、この端末に ZIP でダウンロードできます。</p>
+          <div class="export-buttons">
+            <button id="exportDriveButton" type="button" class="primary-button" disabled>Google Drive に保存</button>
+            <button id="exportDeviceButton" type="button" class="secondary-button" disabled>この端末にダウンロード（ZIP）</button>
+          </div>
+          <p id="exportNote" class="export-note"></p>
+          <p id="exportStatus" class="export-status" role="status"></p>
+        </section>
+
         <section class="settings-section install-section" aria-labelledby="installSettingsTitle">
           <h4 id="installSettingsTitle">デバイスへのインストール方法</h4>
           <p id="installDescription" class="install-description">下のQRコードをスマートフォンで読み取ってアクセスしてください。</p>
@@ -362,6 +373,7 @@
       crossorigin=""
     ></script>
     <script src="https://cdn.jsdelivr.net/npm/exifr@7.1.3/dist/lite.umd.js"></script>
+    <script src="export.js"></script>
     <script src="app.js"></script>
   </body>
 </html>
