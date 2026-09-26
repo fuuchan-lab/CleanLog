@@ -777,10 +777,19 @@ function closeRecordModalView() {
   recordModal.classList.add('hidden');
 }
 
+/** ログイン中で、オンラインの間だけ、ログインボタンの縁を緑にして点滅させる */
+function updateLiveIndicator() {
+  googleLoginButton.classList.toggle('google-button-live', isGoogleLoggedIn && navigator.onLine !== false);
+}
+
+window.addEventListener('online', updateLiveIndicator);
+window.addEventListener('offline', updateLiveIndicator);
+
 function updateLoginState() {
   googleLoginText.textContent = isGoogleLoggedIn ? t('connected') : t('login');
   googleLoginText.classList.toggle('connected', isGoogleLoggedIn);
   googleLoginButton.style.opacity = isGoogleLoggedIn ? '1' : '0.96';
+  updateLiveIndicator();
 
   if (isGoogleLoggedIn && driveUserAvatarUrl) {
     googleMark.style.backgroundImage = `url(${driveUserAvatarUrl})`;
@@ -1014,6 +1023,7 @@ async function connectToDrive(promptOverride = null) {
 
   googleLoginText.textContent = t('connecting');
   googleLoginText.classList.remove('connected');
+  googleLoginButton.classList.remove('google-button-live');
 
   try {
     await getDriveAccessToken(true, promptOverride);
