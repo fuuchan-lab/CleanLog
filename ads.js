@@ -29,8 +29,7 @@
   ad.className = 'adsbygoogle';
   ad.dataset.adClient = ADSENSE_CLIENT;
   ad.dataset.adSlot = ADSENSE_SLOT;
-  ad.dataset.adFormat = 'auto';
-  ad.dataset.fullWidthResponsive = 'true';
+  ad.dataset.adFormat = 'horizontal';
   banner.append(ad);
   shell.append(banner);
 
