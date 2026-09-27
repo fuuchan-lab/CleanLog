@@ -20,7 +20,7 @@
   if (!ADSENSE_CLIENT || !ADSENSE_SLOT) return;
   if (isAndroidApp()) return;
 
-  const shell = document.querySelector('.app-shell');
+  const shell = document.querySelector('.bottom-dock');
   if (!shell) return;
 
   const banner = document.createElement('div');
@@ -31,7 +31,7 @@
   ad.dataset.adSlot = ADSENSE_SLOT;
   ad.dataset.adFormat = 'horizontal';
   banner.append(ad);
-  shell.append(banner);
+  shell.insertBefore(banner, shell.firstChild);
 
   const script = document.createElement('script');
   script.async = true;
@@ -39,9 +39,20 @@
   script.src = `https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${encodeURIComponent(ADSENSE_CLIENT)}`;
   document.head.append(script);
 
+  // 広告を読み出せない時（ブロック・未配信・時間切れ）は、空白を残さず、広告の枠ごと消す
+  const removeBanner = () => banner.remove();
+  script.onerror = removeBanner;
+  new MutationObserver(() => {
+    if (ad.dataset.adStatus === 'unfilled') removeBanner();
+  }).observe(ad, { attributes: true, attributeFilter: ['data-ad-status'] });
+  setTimeout(() => {
+    if (ad.dataset.adStatus !== 'filled') removeBanner();
+  }, 15000);
+
   try {
     (window.adsbygoogle = window.adsbygoogle || []).push({});
   } catch (error) {
     console.error('[ads]', error);
+    removeBanner();
   }
 })();

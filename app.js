@@ -123,6 +123,10 @@ const locateButton = document.getElementById('locateButton');
 const albumButton = document.getElementById('albumButton');
 const albumInput = document.getElementById('albumInput');
 const settingsButton = document.getElementById('settingsButton');
+const bottomDock = document.getElementById('bottomDock');
+const dashStats = document.getElementById('dashStats');
+const dashBody = document.getElementById('dashBody');
+let activeTab = 'map';
 const settingsModal = document.getElementById('settingsModal');
 const closeSettingsModal = document.getElementById('closeSettingsModal');
 const settingsCategoryList = document.getElementById('settingsCategoryList');
@@ -251,6 +255,10 @@ const translations = {
     deviceLimitNote: '端末の上限（{max}台）に達しているため、この端末では記録の表示・保存ができません。下の一覧で使っていない端末を解除してください。',
     accountShared: '同じアカウントでログインした端末（最大{max}台）の記録は、このフォルダーに集約されます。',
     helpTitle: '使い方（ヘルプ）', helpSubtitle: '撮影・地図・エクスポート・端末の管理などの説明',
+    navCapture: '撮影・記録', navMap: 'マップ', captureLead: '写真を撮影、またはアルバムから選んで記録します。', captureCamera: '撮影して記録', captureAlbum: 'アルバムから選ぶ',
+    navRecord: '撮影・記録', navList: 'データ一覧', navDashboard: 'ダッシュボード', navHelp: 'ヘルプ', navMenu: 'メニュー',
+    dashTitle: 'ダッシュボード', dashInRange: '期間内の記録', dashTotal: '全記録', dashDays: '記録した日数', dashLocated: '場所つき',
+    dashByType: '種類別', dashByMonth: '月別', dashEmpty: 'この期間の記録はまだありません', dashPeriod: '記録期間',
     weekdays: ['日', '月', '火', '水', '木', '金', '土'],
   },
   en: {
@@ -298,6 +306,10 @@ const translations = {
     deviceLimitNote: 'The limit of {max} devices has been reached, so this device cannot show or save records. Remove an unused device from the list below.',
     accountShared: 'Records from every device logged in to this account (up to {max}) are combined in this folder.',
     helpTitle: 'How to use (Help)', helpSubtitle: 'Recording, the map, export and device management',
+    navCapture: 'Capture', navMap: 'Map', captureLead: 'Take a photo, or pick one from your album, to record it.', captureCamera: 'Take a photo', captureAlbum: 'Choose from album',
+    navRecord: 'Capture', navList: 'Records', navDashboard: 'Dashboard', navHelp: 'Help', navMenu: 'Menu',
+    dashTitle: 'Dashboard', dashInRange: 'In period', dashTotal: 'All records', dashDays: 'Days recorded', dashLocated: 'With location',
+    dashByType: 'By type', dashByMonth: 'By month', dashEmpty: 'No records in this period yet', dashPeriod: 'Period',
     weekdays: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
   },
 };
@@ -417,6 +429,21 @@ function applyTranslations() {
   document.querySelector('#devicesHelp').textContent = t('devicesHelp');
   document.querySelector('#accountSharedNote').textContent = fillIn(t('accountShared'), { max: window.LogDevices.MAX_DEVICES });
   document.querySelector('#helpCard').href = `help.html?lang=${currentLanguage}`;
+  document.querySelector('#navHelp').href = `help.html?lang=${currentLanguage}`;
+  document.querySelector('#bottomNav').setAttribute('aria-label', t('navMenu'));
+  document.querySelector('#navCaptureLabel').textContent = t('navCapture');
+  document.querySelector('#navMapLabel').textContent = t('navMap');
+  document.querySelector('#captureTitle').textContent = t('navCapture');
+  document.querySelector('#captureLead').textContent = t('captureLead');
+  document.querySelector('#captureCameraLabel').textContent = t('captureCamera');
+  document.querySelector('#captureAlbumLabel').textContent = t('captureAlbum');
+  document.querySelector('#captureHint').textContent = t('locationHint');
+  document.querySelector('#navListLabel').textContent = t('navList');
+  document.querySelector('#navDashLabel').textContent = t('navDashboard');
+  document.querySelector('#navSettingsLabel').textContent = t('settings');
+  document.querySelector('#navHelpLabel').textContent = t('navHelp');
+  document.querySelector('#dashTitle').textContent = t('dashTitle');
+  document.querySelector('#dashPeriodButton').textContent = t('periodFilter');
   document.querySelector('#helpCardTitle').textContent = t('helpTitle');
   document.querySelector('#helpCardSub').textContent = t('helpSubtitle');
   updateDeviceControls();
@@ -630,6 +657,88 @@ function renderDateRangeSummary() {
 
   const density = visibleRecords.length === 0 ? 0 : visibleRecords.length / getMapAreaKm2();
   densityValue.textContent = density.toFixed(1);
+  renderDashboard();
+}
+
+function escapeDashText(value) {
+  return String(value).replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[ch]);
+}
+
+// ダッシュボード: 期間内の件数、種類別、月別
+function renderDashboard() {
+  if (activeTab !== 'dashboard') return;
+  const inRange = getRecordsInRange();
+  document.querySelector('#dashPeriodLabel').textContent = `${t('dashPeriod')}: ${formatRangeLabel(dateRange.start, dateRange.end)}`;
+
+  const days = new Set(inRange.filter((record) => record.date).map((record) => record.date.replace(/-/g, '/')));
+  const stats = [
+    [t('dashInRange'), inRange.length],
+    [t('dashTotal'), records.length],
+    [t('dashDays'), days.size],
+    [t('dashLocated'), inRange.filter(hasValidCoordinates).length],
+  ];
+  dashStats.innerHTML = stats
+    .map(([label, value]) => `<div class="dash-stat"><span class="value">${value}</span><span class="label">${escapeDashText(label)}</span></div>`)
+    .join('');
+
+  if (inRange.length === 0) {
+    dashBody.innerHTML = `<p class="dash-empty">${escapeDashText(t('dashEmpty'))}</p>`;
+    return;
+  }
+
+  const byType = new Map();
+  inRange.forEach((record) => {
+    const key = getRecordCategoryKey(record);
+    byType.set(key, (byType.get(key) || 0) + 1);
+  });
+  const typeRows = [...byType.entries()]
+    .map(([key, count]) => {
+      const category = categoryMap[key];
+      return { label: category ? getCategoryLabel(category) : key, color: category ? category.color : '#8a94a6', count };
+    })
+    .sort((a, b) => b.count - a.count);
+
+  const byMonth = new Map();
+  inRange.forEach((record) => {
+    if (!record.date) return;
+    const month = record.date.replace(/-/g, '/').slice(0, 7);
+    byMonth.set(month, (byMonth.get(month) || 0) + 1);
+  });
+  const monthRows = [...byMonth.entries()]
+    .sort((a, b) => a[0].localeCompare(b[0]))
+    .slice(-6)
+    .map(([month, count]) => ({ label: month, color: 'var(--green)', count }));
+
+  const bars = (rows) => {
+    const max = Math.max(...rows.map((row) => row.count), 1);
+    return rows
+      .map((row) => `<div class="dash-row"><span class="dash-name"><i style="background:${row.color}"></i>${escapeDashText(row.label)}</span><span class="dash-bar"><span style="width:${Math.max(4, Math.round((row.count / max) * 100))}%;background:${row.color}"></span></span><span class="dash-count">${row.count}</span></div>`)
+      .join('');
+  };
+  dashBody.innerHTML = `<h3 class="dash-heading">${escapeDashText(t('dashByType'))}</h3>${bars(typeRows)}<h3 class="dash-heading">${escapeDashText(t('dashByMonth'))}</h3>${bars(monthRows)}`;
+}
+
+// 下のナビゲーションで表示を切り替える（撮影・記録 = 地図、データ一覧、ダッシュボード）
+function setTab(tab) {
+  activeTab = tab;
+  document.querySelectorAll('[data-view]').forEach((element) => {
+    element.classList.toggle('view-hidden', element.dataset.view !== tab);
+  });
+  document.querySelectorAll('.nav-item[data-tab]').forEach((button) => {
+    const active = button.dataset.tab === tab;
+    button.classList.toggle('active', active);
+    if (active) button.setAttribute('aria-current', 'page');
+    else button.removeAttribute('aria-current');
+  });
+  if (tab === 'map' && window.map && typeof window.map.invalidateSize === 'function') {
+    setTimeout(() => window.map.invalidateSize(), 0);
+  }
+  if (tab === 'dashboard') renderDashboard();
+  window.scrollTo(0, 0);
+}
+
+function syncDockHeight() {
+  document.documentElement.style.setProperty('--dock-h', `${bottomDock.offsetHeight}px`);
 }
 
 function handleDateRangeSubmit(event) {
@@ -1342,6 +1451,15 @@ photoInput.addEventListener('change', handlePhotoSelected);
 albumInput.addEventListener('change', handleAlbumSelected);
 useCurrentLocationForRecordButton.addEventListener('click', handleUseCurrentLocationForRecord);
 settingsButton.addEventListener('click', openSettings);
+document.querySelectorAll('.nav-item[data-tab]').forEach((button) => {
+  button.addEventListener('click', () => setTab(button.dataset.tab));
+});
+document.getElementById('navSettings').addEventListener('click', openSettings);
+document.getElementById('captureCameraButton').addEventListener('click', () => addRecordButton.click());
+document.getElementById('captureAlbumButton').addEventListener('click', () => albumButton.click());
+document.getElementById('dashPeriodButton').addEventListener('click', openDateRangeModal);
+if (window.ResizeObserver) new ResizeObserver(syncDockHeight).observe(bottomDock);
+syncDockHeight();
 closeSettingsModal.addEventListener('click', closeSettings);
 settingsModal.addEventListener('click', (event) => {
   if (event.target === settingsModal) {
@@ -1967,7 +2085,7 @@ function renderRecords() {
       <div class="record-time">${item.time}</div>
     `;
     article.addEventListener('click', () => {
-      if (hasValidCoordinates(item)) {
+      if (activeTab === 'map' && hasValidCoordinates(item)) {
         map.flyTo([item.lat, item.lng], 17, { duration: 1.2 });
       }
       openDetail(item);
