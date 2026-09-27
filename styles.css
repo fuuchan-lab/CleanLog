@@ -1564,11 +1564,6 @@ h1 {
   outline-offset: -2px;
 }
 
-/* ナビの「設定」があるので、上のバーの歯車は隠す */
-.topbar-actions #settingsButton {
-  display: none;
-}
-
 /* 撮影・記録 */
 .capture-panel {
   background: var(--surface-glass);
