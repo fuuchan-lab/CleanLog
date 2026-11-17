@@ -3,7 +3,11 @@ const CACHE = 'cleanlog-v1';
 const SHELL = [
   './', 'index.html', 'styles.css', 'app.js', 'ads.js', 'devices.js', 'export.js',
   'manifest.json', 'help.html', 'privacy.html', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/favicon.svg',
+  'icons/favicon.ico',
 ];
+// ページを開く時に、ネットワークの返事を待つ長さ。電波が弱い会場では返事が来ないまま待ち続けて
+// 画面が真っ白になるので、これを過ぎたら保存しておいたページを出す（ヘルプも同じ）
+const NAVIGATE_TIMEOUT_MS = 4000;
 // 地図や画面の部品を配っている外部サービス。これらも最後に見たものを残しておく（地図の画像は残さない）
 const LIBRARY_HOSTS = ['https://unpkg.com/', 'https://cdn.jsdelivr.net/', 'https://fonts.googleapis.com/', 'https://fonts.gstatic.com/'];
 
@@ -33,10 +37,30 @@ self.addEventListener('fetch', (event) => {
   event.respondWith(networkFirst(request));
 });
 
+/** ページの取得。時間内に返事が無く、保存したページがあれば、それを先に出す（取得は裏で続け、届いたら保存する） */
+function fetchWithTimeout(request, cache) {
+  const network = fetch(request);
+  network
+    .then((response) => {
+      if (response.status === 200) cache.put(request, response.clone()).catch(() => {});
+    })
+    .catch(() => {});
+  return Promise.race([
+    network,
+    new Promise((resolve, reject) =>
+      setTimeout(async () => {
+        const cached = await cache.match(request, { ignoreSearch: true });
+        if (cached) resolve(cached);
+        else network.then(resolve, reject);
+      }, NAVIGATE_TIMEOUT_MS),
+    ),
+  ]);
+}
+
 async function networkFirst(request) {
   const cache = await caches.open(CACHE);
   try {
-    const response = await fetch(request);
+    const response = await (request.mode === 'navigate' ? fetchWithTimeout(request, cache) : fetch(request));
     if (response.status === 200) cache.put(request, response.clone()).catch(() => {});
     return response;
   } catch (error) {
