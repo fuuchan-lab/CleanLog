@@ -1,5 +1,5 @@
 // オフライン対応。オンラインの時は常に最新のファイルを取りに行き、電波がない時は最後に見たものを使う。
-const CACHE = 'cleanlog-v1';
+const CACHE = 'cleanlog-v2';
 const SHELL = [
   './', 'index.html', 'styles.css', 'app.js', 'ads.js', 'devices.js', 'export.js',
   'manifest.json', 'help.html', 'privacy.html', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/favicon.svg',
