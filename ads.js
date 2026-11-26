@@ -29,7 +29,7 @@
   ad.className = 'adsbygoogle';
   ad.dataset.adClient = ADSENSE_CLIENT;
   ad.dataset.adSlot = ADSENSE_SLOT;
-  ad.dataset.adFormat = 'horizontal';
+  ad.style.cssText = 'display:inline-block;width:320px;height:50px';
   banner.append(ad);
   shell.insertBefore(banner, shell.firstChild);
 
